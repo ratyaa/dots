@@ -1,0 +1,77 @@
+super + shift + Return
+    st
+
+super + shift + x
+    gen-rofi-placeholder && rofi -show run
+
+super + shift + q
+    slock
+
+super + alt + shift + {q,r}
+    bspc {quit,wm -r}
+
+super + {_,alt + }w
+    bspc node -{c,k}
+
+super + shift + e
+    emacsclient -c
+
+super + shift + b
+    bspc rule -a Emacs state=floating && bookmarkthis && bspc rule -a Emacs state=tiled
+
+super + shift + i
+    gen-rofi-placeholder && xdotool type $(grep -v '^#' ~/.local/share/bookmarks | dmenu -i -l 50 | cut -d' ' -f1)
+
+super + shift + p
+    gen-rofi-placeholder && passmenu
+
+super + {_,alt + } {1-9}
+    bspc {desktop -f,node -d} '^{1-9}'
+
+super + {_,alt + }{h,j,k,l}
+    bspc node -{f,s} {west,south,north,east}
+
+super + m
+    bspc desktop -l next
+
+super + Return
+    bspc node -s biggest.window
+
+super + alt + {t,s,f}
+    bspc node -t {tiled,floating,fullscreen}
+
+# Focus a floating window / Cycle floating windows.
+super + {s,f}
+	bspc node 'focused.floating#next.local.!hidden.{_,!}floating.{!,_}fullscreen' -f \
+	    || bspc node 'last.local.!focused.!hidden.{_,!}floating.{!,_}fullscreen' -f \
+	    || bspc node  'any.local.!focused.!hidden.{_,!}floating.{!,_}fullscreen' -f
+
+super + {comma,period}
+    bspc {desktop,node} -f last
+    
+XF86MonBrightnessUp
+    light -A 1
+
+XF86MonBrightnessDown
+    light -U 1
+	
+XF86AudioRaiseVolume
+    wpctl set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+
+
+XF86AudioLowerVolume
+    wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
+
+XF86AudioMute
+    wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+
+XF86WLAN
+    bluetoothctl connect 2C:BE:EB:12:FE:4A && nmcli device wifi list --rescan yes
+
+Print
+    scrot -o -F "$HOME/pics/screenshots/latest.png" && notify-send -t 3000 "Captured!" -u low
+
+super + alt + Print
+    scrot -d 5 -o -F "$HOME/pics/screenshots/latest.png" && notify-send -t 3000 "Captured!" -u low
+
+super + Print
+        scrot -f -s -o -F "$HOME/pics/screenshots/latest.png" && notify-send -t 3000 "Captured!" -u low

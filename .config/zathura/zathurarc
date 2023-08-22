@@ -1,0 +1,39 @@
+# -*- conf -*-
+set selection-clipboard clipboard
+# set adjust-open width
+
+set first-page-column 1:1
+set guioptions none
+
+set highlight-active-color "#000000"
+set highlight-transparency 0.2
+
+set dbus-service true
+set synctex true
+# set synctex-editor-command "emacsclient +%{line} %{input}"
+
+set selection-notification false
+
+# keybindings
+map [normal] 		<C-f> 		toggle_fullscreen
+map [normal] 		<C-Button1>	synctex-editor-command
+map [fullscreen] 	<C-f>		toggle_fullscreen
+map [fullscreen]	<C-Button1>	synctex-editor-command
+
+unmap [normal]		j
+unmap [normal]		k
+unmap [normal]		J
+unmap [normal]		K
+unmap [fullscreen]	j
+unmap [fullscreen]	k
+unmap [fullscreen]	J
+unmap [fullscreen]	K
+
+map [normal]		j		navigate next
+map [normal]		k		navigate previous
+map [normal]		J		scroll down
+map [normal]		K		scroll up
+map [fullscreen]	j		navigate next
+map [fullscreen]	k		navigate previous
+map [fullscreen]	J		scroll down
+map [fullscreen]	K		scroll up

@@ -6,3 +6,12 @@
 
 !.config/emacs
 !.config/emacs/init.el
+
+!.config/sxhkd
+!.config/sxhkd/sxhkdrc
+
+!.config/bspwm
+!.config/bspwm/bspwmrc
+
+!.config/zathura
+!.config/zathura/zathurarc
