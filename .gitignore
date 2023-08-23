@@ -8,6 +8,7 @@
 !.xinitrc
 
 !.config/
+!.local/
 
 !.config/emacs
 !.config/emacs/init.el
@@ -26,3 +27,10 @@
 
 !.ssh/
 !.ssh/config
+
+!.config/rofi/
+!.config/rofi/config.rasi
+!.config/rofi/placeholder.rasi
+
+!.local/bin/
+!.local/bin/*

@@ -1,0 +1,10 @@
+#!/bin/sh
+
+log=$(bluetoothctl info)
+
+if [[ ${log} =~ *'UUID: Audio Sink' ]]
+then
+    echo "yes"
+else
+    echo "no"
+fi

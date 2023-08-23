@@ -1,0 +1,9 @@
+#!/bin/sh
+
+ph_file="$HOME/.local/share/placeholders"
+config="$HOME/.config/rofi/placeholder.rasi"
+
+ph_line=$(shuf -i 1-$(wc -l < "${ph_file}") -n 1)
+ph=$(sed "${ph_line}q;d" "${ph_file}") 
+
+sed -i -E "s/\".+\"/\"${ph}\"/g" "${config}"

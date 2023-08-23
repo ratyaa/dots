@@ -1,0 +1,35 @@
+#!/bin/sh
+
+clock() {
+    date +%H:%M:%S
+}
+
+battery() {
+    cat /sys/class/power_supply/BATT/capacity 
+}
+
+panel() {
+    bspc subscribe report
+}
+
+color_hl2 = "#81a1c1"
+
+bspc_desktops() {
+    desktops=$(bspc query -D --names)
+    buf=""
+    for d in ${desktops[@]}; do
+        if [[ "$(bspc query -D -d focused --names)" == "${d}" ]]; then
+            buf="${buf}%{B${color_hl2}}  ${d}  %{B-}"
+        else
+            buf="${buf}  ${d}  "
+        fi
+    done
+
+    echo "${buf}"
+}
+
+while true; do
+    bar_input="$(panel) $(battery)%% $(clock)"
+    echo $bar_input
+    sleep 1
+done

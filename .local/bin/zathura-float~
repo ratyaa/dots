@@ -1,0 +1,23 @@
+#!/bin/bash
+
+inputstr="$@"
+
+bspc rule -a Zathura state=floating
+
+newest_node=$(bspc query -N -n newest.window)
+
+echo ${inputstr}
+zathura ${inputstr} &
+
+while [[ ${newest_node} == $(bspc query -N -n newest.window) ]]
+do
+    sleep 0.05
+done
+
+# newest_node=$(bspc query -N -n newest.window)
+
+# # bspc node newest.window -z top_left 408 -486
+# # bspc node newest.window -z bottom_right 846 538
+
+bspc rule -a Zathura state=tiled
+# bspc node last.window -f
