@@ -37,3 +37,6 @@
 
 !.config/panel
 !.config/panel/*
+
+**/*~
+**/#*#

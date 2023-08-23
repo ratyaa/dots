@@ -1,7 +1,0 @@
-#!/bin/sh
-
-bookmark="$(xclip -o)"
-file="$HOME/.local/share/bookmarks"
-
-echo "$bookmark" >> "$file"
-emacsclient -c "$file" --eval "(goto-char (point-max))"

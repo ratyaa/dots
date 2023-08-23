@@ -1,9 +1,0 @@
-#!/bin/sh
-
-while true; do
-    current_date=$(xdotool getactivewindow getwindowname)
-    echo ${current_date}
-    while [[ $current_date == $(xdotool getactivewindow getwindowname) ]]; do
-	:
-    done
-done
