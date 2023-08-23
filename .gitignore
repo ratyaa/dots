@@ -4,6 +4,9 @@
 !.bash_aliases
 !.xprofile
 
+!.Xresources
+!.xinitrc
+
 !.config/
 
 !.config/emacs
@@ -20,3 +23,6 @@
 
 !.config/interception
 !.config/interception/*
+
+!.ssh/
+!.ssh/config
