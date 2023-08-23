@@ -1,3 +1,5 @@
+alias ls='ls --color=auto'
+alias grep='grep --color=auto'
 alias l='ls -la'
 alias e='emacsclient -c'
 alias et='emacsclient -c -t'
