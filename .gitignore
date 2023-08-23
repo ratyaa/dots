@@ -34,3 +34,6 @@
 
 !.local/bin/
 !.local/bin/*
+
+!.config/panel
+!.config/panel/*

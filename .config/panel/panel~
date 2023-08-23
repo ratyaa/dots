@@ -1,0 +1,90 @@
+#! /bin/sh
+
+if xdo id -a "$PANEL_WM_NAME" > /dev/null ; then
+	printf "%s\n" "The panel is already running." >&2
+	exit 1
+fi
+
+trap 'trap - TERM; kill 0' INT TERM QUIT EXIT
+
+[ -e "$PANEL_FIFO" ] && rm "$PANEL_FIFO"
+mkfifo "$PANEL_FIFO"
+
+while true; do
+    current_date=$(date "+%a %b %d %R")
+    echo "SYS$current_date" > "$PANEL_FIFO"
+    while [[ $current_date == $(date "+%a %b %d %R") ]]; do
+	sleep 0.1
+    done
+done &
+
+while true; do
+    current_window=$(xdotool getactivewindow getwindowclassname)
+    echo "TITLE$current_window" > "$PANEL_FIFO"
+    while [[ $current_window == $(xdotool getactivewindow getwindowclassname) ]]; do
+	sleep 0.1
+    done
+done &
+
+while true; do
+    current_battery=$(cat /sys/class/power_supply/BATT/capacity)
+    battery_status=$(cat /sys/class/power_supply/BATT/status)
+    echo "BAT$current_battery" > "$PANEL_FIFO"
+    while [[ $current_battery == $(cat /sys/class/power_supply/BATT/capacity) && $battery_status == $(cat /sys/class/power_supply/BATT/status ) ]]; do
+	sleep 0.1
+    done
+done &
+
+while true; do
+    current_bl=$(light)
+    echo "BLIGHT$current_bl" > "$PANEL_FIFO"
+    while [[ $current_bl == $(light) ]]; do
+	sleep 0.1
+    done
+done &
+
+while true; do
+    current_vol=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | sed 's/Volume: //g; s/ \[MUTED\]/M/g')
+    echo "VOL$current_vol" > "$PANEL_FIFO"
+    while [[ $current_vol == $(wpctl get-volume @DEFAULT_AUDIO_SINK@ | sed 's/Volume: //g; s/ \[MUTED\]/M/g') ]]; do
+	sleep 0.1
+    done
+done &
+
+while true; do
+    bth_status=$(bluetoothctl info)
+
+    if [[ ${bth_status} == *"UUID: Audio Sink"* ]]
+    then
+	bth_status="yes"
+    else
+	bth_status="no"
+    fi
+
+    echo "BTH$current_vol" > "$PANEL_FIFO"
+
+    bth_new_status=$bth_status
+    
+    while [[ $bth_status == $bth_new_status ]]; do
+	sleep 1
+	bth_new_status=$(bluetoothctl info)
+
+	if [[ ${bth_new_status} == *"UUID: Audio Sink"* ]]
+	then
+	    bth_new_status="yes"
+	else
+	    bth_new_status="no"
+	fi
+    done
+done &
+
+bspc subscribe report > "$PANEL_FIFO" &
+
+. panel_colors
+
+panel_bar < "$PANEL_FIFO" | lemonbar -a 32 -u 2 -n "$PANEL_WM_NAME" -g x$PANEL_HEIGHT -f "JetBrainsMono Nerd Font:size=10:style=Medium" -f "Noto Sans CJK SC:size=10:style=Medium" -F "$COLOR_DEFAULT_FG" -B "$COLOR_DEFAULT_BG" | sh &
+
+wid=$(xdo id -m -a "$PANEL_WM_NAME")
+xdo above -t "$(xdo id -N Bspwm -n root | sort | head -n 1)" "$wid"
+
+wait

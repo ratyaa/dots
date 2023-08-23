@@ -1,0 +1,284 @@
+#! /bin/sh
+#
+# Example panel for lemonbar
+
+. panel_colors
+
+num_mon=$(bspc query -M | wc -l)
+
+while read -r line ; do
+    case $line in
+	BAT*)
+	    # battery output
+	    bat="${line#???}"
+
+	    if [[ $(cat /sys/class/power_supply/BATT/status) == "Charging" ]]
+	    then
+		if ((0<=$bat && $bat<=5))
+		then
+		    bat_icon="%{F$COLOR_BATTERY_ALERT}\U000f089f%{F-}"
+		elif ((6<=$bat && $bat<=15))
+		then
+		    bat_icon="%{F$COLOR_BATTERY_ALERT}\U000f089c%{F-}"
+		elif ((16<=$bat && $bat<=25))
+		then
+		    bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f0086%{F-}"
+		elif ((26<=$bat && $bat<=35))
+		then
+		    bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f0087%{F-}"
+		elif ((36<=$bat && $bat<=45))
+		then
+		    bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f0088%{F-}"
+		elif ((46<=$bat && $bat<=55))
+		then
+		    bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f089d%{F-}"
+		elif ((56<=$bat && $bat<=65))
+		then
+		    bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f0089%{F-}"
+		elif ((66<=$bat && $bat<=75))
+		then
+		    bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f089e%{F-}"
+		elif ((76<=$bat && $bat<=85))
+		then
+		    bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f008a%{F-}"
+		elif ((86<=$bat && $bat<=99))
+		then
+		    bat_icon="%{F$COLOR_BATTERY_GOOD}\U000f008b%{F-}"
+		else
+		    bat_icon="%{F$COLOR_BATTERY_GOOD}\U000f0085%{F-}"
+		fi
+	    else
+		if ((0<=$bat && $bat<=5))
+		then
+		    bat_icon="%{F$COLOR_BATTERY_CRITICAL}\U000f0083%{F-}"
+		elif ((6<=$bat && $bat<=15))
+		then
+		    bat_icon="%{F$COLOR_BATTERY_ALERT}\U000f007a%{F-}"
+		elif ((16<=$bat && $bat<=25))
+		then
+		    bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f007b%{F-}"
+		elif ((26<=$bat && $bat<=35))
+		then
+		    bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f007c%{F-}"
+		elif ((36<=$bat && $bat<=45))
+		then
+		    bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f007d%{F-}"
+		elif ((46<=$bat && $bat<=55))
+		then
+		    bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f007e%{F-}"
+		elif ((56<=$bat && $bat<=65))
+		then
+		    bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f007f%{F-}"
+		elif ((66<=$bat && $bat<=75))
+		then
+		    bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f0080%{F-}"
+		elif ((76<=$bat && $bat<=85))
+		then
+		    bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f0081%{F-}"
+		elif ((86<=$bat && $bat<=95))
+		then
+		    bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f0082%{F-}"
+		else
+		    bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f0079%{F-}"
+		fi
+	    fi
+	    ;;
+	SYS*)
+	    # clock output
+	    sys_icon="\U000f00f0"
+	    sys="%{F$COLOR_SYS_FG}%{B$COLOR_SYS_BG} ${sys_icon} ${line#???} %{B-}%{F-}"
+	    ;;
+	TITLE*)
+	    # xtitle output
+	    title_name="${line#?????}"
+	    title_icon=""
+	    case $title_name in
+		"st-256color")
+		    title_name="st"
+		    title_icon="\ue795"
+		    ;;
+		"Emacs")
+		    title_name="emacs"
+		    title_icon="\ue632"
+		    ;;
+		"firefox")
+		    title_icon="\U000f0239"
+		    ;;
+		"discord")
+		    title_icon="\U000f066f"
+		    ;;
+		"TelegramDesktop")
+		    title_name="telegram"
+		    title_icon="\ue215"
+		    ;;
+	    esac
+	    title="%{F$COLOR_TITLE_FG}%{B$COLOR_TITLE_BG} ${title_icon} ${title_name} %{B-}%{F-}"
+	    ;;
+	BLIGHT*)
+	    # backlight output
+	    backlight="${line#??????}"
+	    backlight="${backlight%.*}%%"
+	    bl_icon="\U000f1802"
+	    bl="%{F${COLOR_BACKLIGHT}}${bl_icon} ${backlight}%{F-}"
+	    ;;
+	VOL*)
+	    # volume
+	    vol_icon=""
+	    vol="${line#???}"
+	    if [[ ${vol} == *M ]]
+	    then
+		vol_icon='\U000f075f'
+		vol="${vol%?}"
+		vol=$(expr "${vol}*100" | bc | xargs printf "%.0f")
+	    else
+		vol=$(expr "${vol}*100" | bc | xargs printf "%.0f")
+		if ((1<=$vol && $vol<=30))
+		then
+		    vol_icon='\U000f057f'
+		elif ((31<=$vol && $vol<=80))
+		then
+		    vol_icon='\U000f0580'
+		elif ((81<=$vol))
+		then
+		    vol_icon='\U000f057e'
+		else
+		    vol_icon='\U000f0e08'
+		fi
+	    fi
+	    vol="${vol_icon} ${vol}%%"
+	    ;;
+	BTH*)
+	    bth="${line#???}"
+	    if [[ ${bth} == "yes" ]]
+	    then
+		bth="%{F${COLOR_BTH}}\U000f00b0%{F-}"
+	    else
+		bth=""
+	    fi
+	    ;;
+	WIFI*)
+	    wifi="${line#????}"
+	    wifi_icon="\U000f092e"
+	    if [[ ${wifi} != "" ]]
+	    then
+		if ((0<=$wifi && $wifi<=5))
+		then
+		    wifi_icon='\U000f092f'
+		elif ((6<=$wifi && $wifi<=25))
+		then
+		    wifi_icon='\U000f091f'
+		elif ((26<=$wifi && $wifi<=50))
+		then
+		    wifi_icon='\U000f0922'
+		elif ((51<=$wifi && $wifi<=75))
+		then
+		    wifi_icon='\U000f0925'
+		elif ((76<=$wifi))
+		then
+		    wifi_icon='\U000f0928'
+		fi
+	    fi
+	    wifi="%{F${COLOR_WIFI}}${wifi_icon}%{F-}"
+	    ;;
+	W*)
+	    # bspwm's state
+	    wm=
+	    IFS=':'
+	    set -- ${line#?}
+	    while [ $# -gt 0 ] ; do
+		item=$1
+		name=${item#?}
+		case $item in
+		    [mM]*)
+			case $item in
+			    m*)
+				# monitor
+				FG=$COLOR_MONITOR_FG
+				BG=$COLOR_MONITOR_BG
+				on_focused_monitor=
+				;;
+			    M*)
+				# focused monitor
+				FG=$COLOR_FOCUSED_MONITOR_FG
+				BG=$COLOR_FOCUSED_MONITOR_BG
+				on_focused_monitor=1
+				;;
+			esac
+			[ $num_mon -lt 2 ] && shift && continue
+			wm="${wm}%{F${FG}}%{B${BG}}%{A:bspc monitor -f ${name}:} ${name} %{A}%{B-}%{F-}"
+			;;
+		    [fFoOuU]*)
+			case $item in
+			    f*)
+				# free desktop
+				FG=$COLOR_FREE_FG
+				BG=$COLOR_FREE_BG
+				UL=$BG
+				;;
+			    F*)
+				if [ "$on_focused_monitor" ] ; then
+				    # focused free desktop
+				    FG=$COLOR_FOCUSED_FREE_FG
+				    BG=$COLOR_FOCUSED_FREE_BG
+				    UL=$BG
+				else
+				    # active free desktop
+				    FG=$COLOR_FREE_FG
+				    BG=$COLOR_FREE_BG
+				    UL=$COLOR_FOCUSED_FREE_BG
+				fi
+				;;
+			    o*)
+				# occupied desktop
+				FG=$COLOR_OCCUPIED_FG
+				BG=$COLOR_OCCUPIED_BG
+				UL=$BG
+				;;
+			    O*)
+				if [ "$on_focused_monitor" ] ; then
+				    # focused occupied desktop
+				    FG=$COLOR_FOCUSED_OCCUPIED_FG
+				    BG=$COLOR_FOCUSED_OCCUPIED_BG
+				    UL=$BG
+				else
+				    # active occupied desktop
+				    FG=$COLOR_OCCUPIED_FG
+				    BG=$COLOR_OCCUPIED_BG
+				    UL=$COLOR_FOCUSED_OCCUPIED_BG
+				fi
+				;;
+			    u*)
+				# urgent desktop
+				FG=$COLOR_URGENT_FG
+				BG=$COLOR_URGENT_BG
+				UL=$BG
+				;;
+			    U*)
+				if [ "$on_focused_monitor" ] ; then
+				    # focused urgent desktop
+				    FG=$COLOR_FOCUSED_URGENT_FG
+				    BG=$COLOR_FOCUSED_URGENT_BG
+				    UL=$BG
+				else
+				    # active urgent desktop
+				    FG=$COLOR_URGENT_FG
+				    BG=$COLOR_URGENT_BG
+				    UL=$COLOR_FOCUSED_URGENT_BG
+				fi
+				;;
+			esac
+			wm="${wm}%{F${FG}}%{B${BG}}%{U${UL}}%{+u}%{A:bspc desktop -f ${name}:} ${name} %{A}%{B-}%{F-}%{-u}"
+			;;
+		    [LTG]*)
+			# layout, state and flags
+			wm="${wm}%{F$COLOR_STATE_FG}%{B$COLOR_STATE_BG} ${name} %{B-}%{F-}"
+			;;
+		esac
+		shift
+	    done
+	    ;;
+    esac
+    
+    echo -e "%s\n" "%{l}${wm}${title}%{c} ${sys} \U000f1819%{r}${wifi} ${bth} ${vol} ${bl} ${bat_icon} %{F#ffffff}${bat}%%%{F-} "
+done
+
