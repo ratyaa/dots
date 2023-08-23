@@ -1,0 +1,3 @@
+#!/bin/sh
+
+export BSPWM_MONITOR_LIST='eDP-1'

@@ -6,3 +6,5 @@ export PANEL_HEIGHT=40
 export PANEL_FONT="JetBrainsMono Nerd Font Mono:size=10"
 export PANEL_WM_NAME=bspwm_panel
 export PDFVIEWER_texdoc="zathura"
+source $HOME/.config/device_profile
+

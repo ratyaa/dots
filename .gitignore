@@ -11,6 +11,9 @@
 !.config/
 !.local/
 
+!.config/xiaomi_profile
+!.config/huawei_profile
+
 !.config/emacs
 !.config/emacs/init.el
 
