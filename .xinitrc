@@ -1,5 +1,7 @@
 #!/bin/sh
 
+[ -f $HOME/.xprofile ] && source $HOME/.xprofile 
+
 sxhkd &
 xrdb -merge $HOME/.Xresources
 
@@ -17,6 +19,6 @@ eval "$(ssh-agent -s)"
 light -S 50
 redshift -P -O 4500
 picom -b
-feh --bg-scale $HOME/pics/wallpapers/goofyplants.png 
+feh --bg-scale $HOME/.config/wallpaper
 
 exec bspwm

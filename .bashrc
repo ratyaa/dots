@@ -2,7 +2,7 @@
 # ~/.bashrc
 #
 
-source $HOME/.bash_aliases
+. $HOME/.bash_aliases
 
 export GPG_TTY=$(tty)
 

@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 #
 # Example panel for lemonbar
 
@@ -10,77 +10,83 @@ while read -r line ; do
     case $line in
 	BAT*)
 	    # battery output
-	    bat="${line#???}"
-
-	    if [[ $(cat /sys/class/power_supply/BATT/status) == "Charging" ]]
+	    if [ -d /sys/class/power_supply/BATT ]
 	    then
-		if ((0<=$bat && $bat<=5))
+		bat="${line#???}"
+
+		if [[ $(cat /sys/class/power_supply/BATT/status) == "Charging" ]]
 		then
-		    bat_icon="%{F$COLOR_BATTERY_ALERT}\U000f089f%{F-}"
-		elif ((6<=$bat && $bat<=15))
-		then
-		    bat_icon="%{F$COLOR_BATTERY_ALERT}\U000f089c%{F-}"
-		elif ((16<=$bat && $bat<=25))
-		then
-		    bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f0086%{F-}"
-		elif ((26<=$bat && $bat<=35))
-		then
-		    bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f0087%{F-}"
-		elif ((36<=$bat && $bat<=45))
-		then
-		    bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f0088%{F-}"
-		elif ((46<=$bat && $bat<=55))
-		then
-		    bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f089d%{F-}"
-		elif ((56<=$bat && $bat<=65))
-		then
-		    bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f0089%{F-}"
-		elif ((66<=$bat && $bat<=75))
-		then
-		    bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f089e%{F-}"
-		elif ((76<=$bat && $bat<=85))
-		then
-		    bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f008a%{F-}"
-		elif ((86<=$bat && $bat<=99))
-		then
-		    bat_icon="%{F$COLOR_BATTERY_GOOD}\U000f008b%{F-}"
+		    if ((0<=$bat && $bat<=5))
+		    then
+			bat_icon="%{F$COLOR_BATTERY_ALERT}\U000f089f%{F-}"
+		    elif ((6<=$bat && $bat<=15))
+		    then
+			bat_icon="%{F$COLOR_BATTERY_ALERT}\U000f089c%{F-}"
+		    elif ((16<=$bat && $bat<=25))
+		    then
+			bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f0086%{F-}"
+		    elif ((26<=$bat && $bat<=35))
+		    then
+			bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f0087%{F-}"
+		    elif ((36<=$bat && $bat<=45))
+		    then
+			bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f0088%{F-}"
+		    elif ((46<=$bat && $bat<=55))
+		    then
+			bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f089d%{F-}"
+		    elif ((56<=$bat && $bat<=65))
+		    then
+			bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f0089%{F-}"
+		    elif ((66<=$bat && $bat<=75))
+		    then
+			bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f089e%{F-}"
+		    elif ((76<=$bat && $bat<=85))
+		    then
+			bat_icon="%{F$COLOR_BATTERY_INTERESTING}\U000f008a%{F-}"
+		    elif ((86<=$bat && $bat<=99))
+		    then
+			bat_icon="%{F$COLOR_BATTERY_GOOD}\U000f008b%{F-}"
+		    else
+			bat_icon="%{F$COLOR_BATTERY_GOOD}\U000f0085%{F-}"
+		    fi
 		else
-		    bat_icon="%{F$COLOR_BATTERY_GOOD}\U000f0085%{F-}"
+		    if ((0<=$bat && $bat<=5))
+		    then
+			bat_icon="%{F$COLOR_BATTERY_CRITICAL}\U000f0083%{F-}"
+		    elif ((6<=$bat && $bat<=15))
+		    then
+			bat_icon="%{F$COLOR_BATTERY_ALERT}\U000f007a%{F-}"
+		    elif ((16<=$bat && $bat<=25))
+		    then
+			bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f007b%{F-}"
+		    elif ((26<=$bat && $bat<=35))
+		    then
+			bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f007c%{F-}"
+		    elif ((36<=$bat && $bat<=45))
+		    then
+			bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f007d%{F-}"
+		    elif ((46<=$bat && $bat<=55))
+		    then
+			bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f007e%{F-}"
+		    elif ((56<=$bat && $bat<=65))
+		    then
+			bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f007f%{F-}"
+		    elif ((66<=$bat && $bat<=75))
+		    then
+			bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f0080%{F-}"
+		    elif ((76<=$bat && $bat<=85))
+		    then
+			bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f0081%{F-}"
+		    elif ((86<=$bat && $bat<=95))
+		    then
+			bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f0082%{F-}"
+		    else
+			bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f0079%{F-}"
+		    fi
 		fi
+		bat="${bat_icon} %{F#ffffff}${bat}%%%{F-} "
 	    else
-		if ((0<=$bat && $bat<=5))
-		then
-		    bat_icon="%{F$COLOR_BATTERY_CRITICAL}\U000f0083%{F-}"
-		elif ((6<=$bat && $bat<=15))
-		then
-		    bat_icon="%{F$COLOR_BATTERY_ALERT}\U000f007a%{F-}"
-		elif ((16<=$bat && $bat<=25))
-		then
-		    bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f007b%{F-}"
-		elif ((26<=$bat && $bat<=35))
-		then
-		    bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f007c%{F-}"
-		elif ((36<=$bat && $bat<=45))
-		then
-		    bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f007d%{F-}"
-		elif ((46<=$bat && $bat<=55))
-		then
-		    bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f007e%{F-}"
-		elif ((56<=$bat && $bat<=65))
-		then
-		    bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f007f%{F-}"
-		elif ((66<=$bat && $bat<=75))
-		then
-		    bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f0080%{F-}"
-		elif ((76<=$bat && $bat<=85))
-		then
-		    bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f0081%{F-}"
-		elif ((86<=$bat && $bat<=95))
-		then
-		    bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f0082%{F-}"
-		else
-		    bat_icon="%{F$COLOR_BATTERY_DEFAULT}\U000f0079%{F-}"
-		fi
+		bat=""
 	    fi
 	    ;;
 	SYS*)
@@ -279,6 +285,6 @@ while read -r line ; do
 	    ;;
     esac
     
-    echo -e "%s\n" "%{l}${wm}${title}%{c} ${sys} %{r}${wifi} ${bth} ${vol} ${bl} ${bat_icon} %{F#ffffff}${bat}%%%{F-} "
+    echo -e "%s\n" "%{l}${wm}${title}%{c} ${sys} %{r}${wifi} ${bth} ${vol} ${bl} ${bat}"
 done
 
