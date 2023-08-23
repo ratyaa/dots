@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# name: table
+# key: table
+# --
+\begin{table}[h]
+  \begin{center}
+    \input{\tbldir $1}
+    \caption{$0}
+  \end{center}
+\end{table}		

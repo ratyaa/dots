@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: full-deriv
+# key: .dd
+# --
+\frac{\mathrm{d}^{$1} $2}{\mathrm{d} $3^{$1}} $0

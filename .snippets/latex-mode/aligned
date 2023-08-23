@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# name: aligned
+# expand-env: ((yas-wrap-around-region t))
+# key: sea
+# --
+\begin{aligned}
+$0
+\end{aligned}

@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: fref
+# key: fref
+# --
+\textbf{рис. \ref{fig:$0}}

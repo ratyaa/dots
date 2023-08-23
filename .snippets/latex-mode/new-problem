@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# name: new-problem
+# key: problem
+# --
+\subsubsection*{$1}
+\subsubsection*{Условие}
+$0
+\subsubsection*{Решение}
+
+\textbf{Ответ:}

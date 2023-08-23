@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: partial-deriv-thermo
+# key: .tpd
+# --
+\left(\frac{\partial^{$1} $3}{\partial $4^{$1}}\right)_{$2}$0

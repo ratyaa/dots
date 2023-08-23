@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: sfrac
+# key: .sf
+# --
+\sfrac{$1}{$2}$0

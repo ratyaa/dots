@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: operator-iff
+# key: iff
+# --
+\Leftrightarrow

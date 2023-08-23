@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: fpow
+# key: fpow
+# --
+\left(\frac{$1}{$2}\right)^{$0}

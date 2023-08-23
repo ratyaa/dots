@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: natural-set
+# key: sn
+# --
+\mathbb{N}

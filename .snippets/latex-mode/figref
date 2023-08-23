@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: figref
+# key: figref
+# --
+\textbf{рис. \ref{fig:$0}}

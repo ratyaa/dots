@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: new-problem-small
+# key: pr
+# --
+\subsubsection*{$1}
+$0
+\textbf{Ответ:}
