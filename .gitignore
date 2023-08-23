@@ -41,5 +41,9 @@
 !.config/panel
 !.config/panel/*
 
+!.snippets/
+!.snippets/*/
+!.snippets/*/*
+
 **/*~
 **/#*#
