@@ -11,7 +11,13 @@ export GPG_TTY=$(tty)
 
 # alias ls='ls --color=auto'
 # alias grep='grep --color=auto'
-PS1='[\u@\h \W]\$ '
+
+C_CYAN="\[$(tput setaf 14)\]"
+C_WHITE="\[$(tput setaf 7)\]"
+C_BOLD="\[$(tput bold)\]"
+C_RESET="\[$(tput sgr0)\]"
+
+PS1="${C_BOLD}${C_CYAN}[\u@\h ${C_WHITE}\W${C_CYAN}]\$ ${C_RESET} "
 
 # Automatically added by the Guix install script.
 if [ -n "$GUIX_ENVIRONMENT" ]; then
@@ -24,12 +30,4 @@ fi
 # /etc/bash/bashrc
 #
 
-case ${TERM} in
-  Eterm*|alacritty*|aterm*|foot*|gnome*|konsole*|kterm*|putty*|rxvt*|tmux*|xterm*|st*)
-    PROMPT_COMMAND+=('printf "\033]0;%s@%s:%s\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/\~}"')
 
-    ;;
-  screen*)
-    PROMPT_COMMAND+=('printf "\033_%s@%s:%s\033\\" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/\~}"')
-    ;;
-esac
