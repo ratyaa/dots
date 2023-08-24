@@ -1,0 +1,5 @@
+Personal repo with my configuration files, scripts and misc shared data.
+
+Run `sync.sh' to sync this repo with the $HOME directory:
+
+  $ ./sync.sh
