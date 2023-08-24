@@ -1,5 +1,7 @@
 Personal repo with my configuration files, scripts and misc shared data.
 
-Run `sync.sh' to sync this repo with the $HOME directory:
+Run `sync.sh' to sync this repo with the $HOME directory (requires `stow'
+program, it's available in most distros' package repositories, for further
+information please follow https://www.gnu.org/software/stow/):
 
   $ ./sync.sh
