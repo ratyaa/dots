@@ -1,28 +1,6 @@
 #!/bin/sh
 
 while true; do
-    bth_status=$(bluetoothctl info)
-
-    if [[ ${bth_status} == *"UUID: Audio Sink"* ]]
-    then
-	bth_status="yes"
-    else
-	bth_status="no"
-    fi
-
-    echo $bth_status
-
-    bth_new_status=$bth_status
-    
-    while [[ $bth_status == $bth_new_status ]]; do
-	sleep 1
-	bth_new_status=$(bluetoothctl info)
-
-	if [[ ${bth_new_status} == *"UUID: Audio Sink"* ]]
-	then
-	    bth_new_status="yes"
-	else
-	    bth_new_status="no"
-	fi
-    done
+    acpi_listen -c 1 &
+    wait $! | echo
 done

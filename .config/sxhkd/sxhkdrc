@@ -1,8 +1,8 @@
 super + shift + Return
-    st
+    st & bspc-wait-newest && bspc node @/ -B
 
 super + shift + x
-    gen-rofi-placeholder && rofi -show run
+    gen-rofi-placeholder && rofi -show run & bspc-wait-newest && bspc node @/ -B
 
 super + shift + q
     slock
@@ -11,10 +11,10 @@ super + alt + shift + {q,r}
     bspc {quit,wm -r}
 
 super + {_,alt + }w
-    bspc node -{c,k}
+    bspc node -{c,k} && bspc node @/ -B
 
 super + shift + e
-    emacsclient -c
+    emacsclient -c & bspc-wait-newest && bspc node @/ -B
 
 super + shift + b
     bspc rule -a Emacs state=floating && bookmarkthis && bspc rule -a Emacs state=tiled
@@ -38,7 +38,7 @@ super + Return
     bspc node -s biggest.window
 
 super + alt + {t,s,f}
-    bspc node -t {tiled,floating,fullscreen}
+    bspc node -t {tiled,floating,fullscreen} && bspc node @/ -B
 
 # Focus a floating window / Cycle floating windows.
 super + {s,f}
@@ -48,6 +48,9 @@ super + {s,f}
 
 super + {comma,period}
     bspc {desktop,node} -f last
+
+super + {backslash}
+    bspc node @/ -B
     
 XF86MonBrightnessUp
     light -A 1

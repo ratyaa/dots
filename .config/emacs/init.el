@@ -20,8 +20,8 @@
 
 (defun my/fontconfig ()
     "font configuration"
-  (set-face-attribute 'default nil :font "JetBrainsMono Nerd Font Mono")
-  (set-face-attribute 'fixed-pitch nil :font "JetBrainsMono Nerd Font Mono")
+  (set-face-attribute 'default nil :font (concat "JetBrainsMono Nerd Font Mono-" (getenv "EMACS_FONT_SIZE")))
+  (set-face-attribute 'fixed-pitch nil :font (concat "JetBrainsMono Nerd Font Mono-" (getenv "EMACS_FONT_SIZE")))
   (set-face-attribute 'variable-pitch nil :font "EB Garamond" :height 140)
   (set-fontset-font t 'han "Noto Sans CJK SC")
   (set-fontset-font t 'han "Noto Sans CJK TC" nil 'append))

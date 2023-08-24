@@ -1,0 +1,8 @@
+#!/bin/bash
+
+newest_node=$(bspc query -N -n newest.window)
+
+while [[ ${newest_node} == $(bspc query -N -n newest.window) ]]
+do
+    sleep 0.05
+done
