@@ -405,6 +405,10 @@
 (use-package slime)
 (setq inferior-lisp-program "sbcl")
 
+(use-package elpher)
+(add-hook 'after-save-hook
+	  'executable-make-buffer-file-executable-if-script-p)
+
 (use-package nix-mode)
 
 (custom-set-variables

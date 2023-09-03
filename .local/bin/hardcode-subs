@@ -1,0 +1,9 @@
+#!/bin/bash
+
+for filename in $@; do
+    subfile=$(ls ${filename} | sed 's/\(.*\)[sS]0\([0-9]\)[eE]0\([0-9]\)\(.*\)\.\(mp4\|mkv\)$/s0\2e0\3-subs.srt/g')
+    
+    [ -n "$(ls ${filename} | grep '\.mp4$')" ] &&
+	[ -f "${subfile}" ] &&
+	ffmpeg -i ${filename} -vf subtitles=${subfile}:force_style='FontName=EB Garamond' $(ls ${subfile} | sed 's/\-subs\.srt/-hardsubs.mp4/g')
+done

@@ -18,6 +18,8 @@ case $(hostname) in
 	systemctl --user --now enable pipewire-pulse
 	;;
     "ratyaaha")
+	xrandr --output eDP --auto #--output eDP --off
+
 	pipewire &
 	pipewire-pulse &
 	wireplumber &

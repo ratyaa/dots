@@ -1,0 +1,6 @@
+#!/bin/bash
+
+for filename in $@; do
+    [ -n "$(ls ${filename} | grep '\.mkv$')" ] &&
+	ffmpeg -i ${filename} -codec copy $(ls ${filename} | sed 's/\(.*\)[sS]0\([0-9]\)[eE]0\([0-9]\)\(.*\)\.\(mp4\|mkv\)$/s0\2e0\3.mp4/g')
+done

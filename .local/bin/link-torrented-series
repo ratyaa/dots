@@ -1,0 +1,10 @@
+#!/bin/bash
+
+output_dir=$(echo $1 | sed 's/.*[sS]\([0-9][0-9]\).*/s\1/g')
+files=("$1"/*)
+
+[ -d $1 ] && mkdir ${output_dir}
+for file in ${files[@]}; do
+    [ -n "$(echo ${file} | grep '\.mkv')" ] &&
+	ln -s "${file}" "$(pwd . )/${output_dir}/$(echo ${file} | sed 's/.*[sS]\([0-9][0-9]\)[eE]\([0-9][0-9]\).*\.\(mp4\|mkv\)$/s\1e\2.\3/g')"
+done

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+for filename in $@; do
+    if [ -f ${filename} ]; then
+	mv ${filename} $(ls ${filename} | sed 's/\(.*\)[sS]0\([0-9]\)[eE]0\([0-9]\)\(.*\)\.\(mp4\|mkv\)$/s0\2e0\3.\5/g')
+    fi
+done
