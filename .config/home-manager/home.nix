@@ -37,6 +37,7 @@
     pass
     nyxt
     qutebrowser
+    gh
     (pkgs.linkFarm "dmenu" [ {
       name = "bin/dmenu";
       path = "${pkgs.rofi-unwrapped}/bin/rofi";
