@@ -1,0 +1,3 @@
+#! /usr/bin/env sh
+
+rofi -dmenu -config $HOME/.config/rofi/password.rasi -i -password

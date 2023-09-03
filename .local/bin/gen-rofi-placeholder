@@ -1,9 +1,15 @@
-#!/bin/sh
+#! /usr/bin/env sh
 
 ph_file="$HOME/.local/share/placeholders"
 config="$HOME/.config/rofi/placeholder.rasi"
 
-ph_line=$(shuf -i 1-$(wc -l < "${ph_file}") -n 1)
-ph=$(sed "${ph_line}q;d" "${ph_file}") 
+[ ! -d $HOME/.config/rofi ] &&
+    mkdir -p $HOME/.config/rofi
 
-sed -i -E "s/\".+\"/\"${ph}\"/g" "${config}"
+[ ! -f ${config} ] &&
+    echo 'entry{placeholder:"asdf";}' > ${config}
+
+ph="$1"
+[ -z "$1" ] && ph=$(sed "$(shuf -i 1-$(wc -l < "${ph_file}") -n 1)q;d" "${ph_file}")
+
+sed -i -E "s/\".*\"/\"${ph}\"/g" "${config}"

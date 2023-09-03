@@ -1,0 +1,17 @@
+#! /usr/bin/env sh
+
+mountpoint="${GNUPGHOME}/mnt"
+device="$(lsblk -o name,label | grep 'KEYS' | sed 's/^[^a-zA-Z0-9]*\([a-zA-Z0-9]*\).*/\1/g')"
+
+if [ -z "$(lsblk -o mountpoint | grep "${mountpoint}")" ]
+then
+    mkdir -p "${mountpoint}"
+    floatterm -g 60x1 -e sudo cryptmount "${device}" "keys" "${mountpoint}"
+    echo "KEYSie" > $PANEL_FIFO
+    [ -n "$(pgrep dunst)" ] && notify-send -t 3000 "Keys drive mounted"
+else
+    floatterm -g 60x1 -e sudo cryptumount "keys" "${mountpoint}"
+    rmdir "${mountpoint}"
+    echo "KEYSie" > $PANEL_FIFO
+    [ -n "$(pgrep dunst)" ] && notify-send -t 3000 "Keys drive unmounted"
+fi

@@ -1,8 +1,8 @@
 super + shift + Return
-    st & bspc-wait-newest && bspc node @/ -B
+    st
 
 super + shift + x
-    gen-rofi-placeholder && rofi -show run & bspc-wait-newest && bspc node @/ -B
+    gen-rofi-placeholder && rofi -show run
 
 super + shift + q
     slock
@@ -11,10 +11,10 @@ super + alt + shift + {q,r}
     bspc {quit,wm -r}
 
 super + {_,alt + }w
-    bspc node -{c,k} && bspc node @/ -B
+    bspc node -{c,k}
 
 super + shift + e
-    emacsclient -c & bspc-wait-newest && bspc node @/ -B
+    emacsclient -c
 
 super + shift + b
     bspc rule -a Emacs state=floating && bookmarkthis && bspc rule -a Emacs state=tiled
@@ -38,7 +38,7 @@ super + Return
     bspc node -s biggest.window
 
 super + alt + {t,s,f}
-    bspc node -t {tiled,floating,fullscreen} && bspc node @/ -B
+    bspc node -t {tiled,floating,fullscreen}
 
 # Focus a floating window / Cycle floating windows.
 super + {s,f}

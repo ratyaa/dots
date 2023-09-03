@@ -405,12 +405,15 @@
 (use-package slime)
 (setq inferior-lisp-program "sbcl")
 
+(use-package nix-mode)
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(package-selected-packages '(slime magit auctex use-package))
+ '(package-selected-packages
+   '(rust-mode gnu-elpa-keyring-update slime magit auctex use-package))
  '(send-mail-function 'sendmail-send-it))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.

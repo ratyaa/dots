@@ -1,0 +1,7 @@
+#! /usr/bin/env sh
+
+name=$1
+mountpoint=$2
+
+umount "${mountpoint}"
+cryptsetup close ${name}

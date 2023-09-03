@@ -1,0 +1,15 @@
+#! /usr/bin/env sh
+
+bspc rule -a st-256color state=floating
+
+newest_node=$(bspc query -N -n newest.window)
+
+st "$@" &
+
+while [[ ${newest_node} == $(bspc query -N -n newest.window) ]]
+do
+    sleep 0.05
+done
+
+bspc rule -a st-256color state=tiled
+wait $!

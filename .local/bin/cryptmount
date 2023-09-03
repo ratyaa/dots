@@ -1,0 +1,11 @@
+#! /usr/bin/env sh
+
+device=$1
+name=$2
+mountpoint=$3
+
+cryptsetup open "/dev/${device}" "${name}"
+mount "/dev/mapper/${name}" "${mountpoint}"
+chmod 600 ${mountpoint}/*
+chmod 700 ${mountpoint}
+chown -R ratyaa:users "${mountpoint}"

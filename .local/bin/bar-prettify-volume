@@ -1,0 +1,30 @@
+#! /usr/bin/env sh
+
+source  $HOME/.config/panel/panel_colors
+
+vol="${1#???}"
+vol_icon="-"
+
+if [[ ${vol} == *M ]]
+then
+    vol_icon='\U000f075f'
+    vol="${vol%?}"
+    vol=$(expr "${vol}*100" | bc | xargs printf "%.0f")
+else
+    vol=$(expr "${vol}*100" | bc | xargs printf "%.0f")
+    if ((1<=$vol && $vol<=30))
+    then
+	vol_icon='\U000f057f'
+    elif ((31<=$vol && $vol<=80))
+    then
+	vol_icon='\U000f0580'
+    elif ((81<=$vol))
+    then
+	vol_icon='\U000f057e'
+    else
+	vol_icon='\U000f0e08'
+    fi
+fi
+
+vol="${vol_icon} ${vol}%%"
+echo "${vol}"

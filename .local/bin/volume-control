@@ -1,0 +1,35 @@
+#! /usr/bin/env sh
+
+case "$1" in
+    # Increase volume-control 
+    "-i")
+	wpctl set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+
+	current_vol=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | sed 's/Volume: //g; s/ \[MUTED\]/M/g')
+	echo "VOL$current_vol" > "$PANEL_FIFO"
+	;;
+
+    # Decrease volume
+    "-d")
+	wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
+	current_vol=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | sed 's/Volume: //g; s/ \[MUTED\]/M/g')
+	echo "VOL$current_vol" > "$PANEL_FIFO"
+	;;
+
+    # Toggle mute/unmute
+    "-m")
+	wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+	current_vol=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | sed 's/Volume: //g; s/ \[MUTED\]/M/g')
+	echo "VOL$current_vol" > "$PANEL_FIFO"
+	;;
+
+    # Help
+    *)
+	echo 'Usage:
+  volume-control [COMMAND]
+
+Commands:
+  -i		Increase volume
+  -d		Decrease volume
+  -m		Toggle mute/unmute'
+    ;;
+esac

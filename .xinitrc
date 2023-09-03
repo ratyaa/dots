@@ -24,11 +24,13 @@ case $(hostname) in
 	;;
 esac
 
+emacs --daemon &
+
 sxhkd &
+dunst &
 xrdb -merge $HOME/.Xresources
 xset r rate 300 150
 fcitx5 -d &	
-emacs --daemon &
 
 eval "$(ssh-agent -s)"
 

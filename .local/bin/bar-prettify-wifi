@@ -1,0 +1,29 @@
+#! /usr/bin/env sh
+
+source  $HOME/.config/panel/panel_colors
+
+wifi="${1#????}"
+wifi_icon="\U000f092e"
+
+if [[ ${wifi} != "" ]]
+then
+    if ((0<=$wifi && $wifi<=5))
+    then
+	wifi_icon='\U000f092f'
+    elif ((6<=$wifi && $wifi<=25))
+    then
+	wifi_icon='\U000f091f'
+    elif ((26<=$wifi && $wifi<=50))
+    then
+	wifi_icon='\U000f0922'
+    elif ((51<=$wifi && $wifi<=75))
+    then
+	wifi_icon='\U000f0925'
+    elif ((76<=$wifi))
+    then
+	wifi_icon='\U000f0928'
+    fi
+fi
+
+wifi="%{F${COLOR_WIFI}}${wifi_icon}%{F-}"
+echo "${wifi}"
