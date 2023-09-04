@@ -1,0 +1,9 @@
+#! /usr/bin/env sh
+
+export PANEL_HEIGHT="50"
+export PANEL_FONT_SIZE="10"
+export PANEL_UNDERLINE_HEIGHT="5"
+export EMACS_FONT_SIZE="10"
+export ROFI_THEME_DIR="${HOME}/.config/rofi/ratyaahn-themes"
+export XRESOURCES_CONFIG="${HOME}/.config/ratyaahn-Xresources"
+export HAS_BACKLIGHT="yes"

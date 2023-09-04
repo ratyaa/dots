@@ -1,18 +1,14 @@
-#!/bin/sh
+#! /usr/bin/env sh
 
 export PATH=$PATH:$HOME/.local/bin:$HOME/.config/panel
 export PANEL_FIFO=/tmp/panel-fifo
-export PANEL_HEIGHT=40
-export PANEL_FONT="JetBrainsMono Nerd Font Mono:size=10"
 export PANEL_WM_NAME=bspwm_panel
 export PDFVIEWER_texdoc="zathura"
 
 # Device-specific profiles
-case $(hostname) in
-    "ratyaaxd")
-	export EMACS_FONT_SIZE=9
-	;;
-    "ratyaaha")
-	export EMACS_FONT_SIZE=10
-	;;
-esac
+device_xprofile="${HOME}/.config/shell-profiles/$(hostname).xprofile"
+[ -f "${device_xprofile}" ] && source "${device_xprofile}"
+
+# Extra config
+extra_xprofile="${HOME}/.config/shell-profiles/extra.xprofile"
+[ -f "${extra_xprofile}" ] && source "${extra_xprofile}"

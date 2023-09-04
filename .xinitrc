@@ -40,6 +40,6 @@ light -S 50
 redshift -P -O 4500
 picom -b
 
-feh --bg-scale $HOME/.config/wallpaper 
+feh --bg-scale $HOME/pics/beauty/0003-mountains.jpg
 
 exec bspwm
