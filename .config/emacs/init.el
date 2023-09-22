@@ -4,8 +4,8 @@
 
 (setq-default fill-column 80)
 
-(set-frame-parameter nil 'alpha-background 80)
-(add-to-list 'default-frame-alist '(alpha-background . 80))
+(set-frame-parameter nil 'alpha-background 75)
+(add-to-list 'default-frame-alist '(alpha-background . 75))
 
 (setq frame-resize-pixelwise t)
 (fringe-mode '(12 . 0))
@@ -22,7 +22,7 @@
     "font configuration"
   (set-face-attribute 'default nil :font (concat "JetBrainsMono Nerd Font Mono-" (getenv "EMACS_FONT_SIZE")))
   (set-face-attribute 'fixed-pitch nil :font (concat "JetBrainsMono Nerd Font Mono-" (getenv "EMACS_FONT_SIZE")))
-  (set-face-attribute 'variable-pitch nil :font "EB Garamond" :height 140)
+  ;; (set-face-attribute 'variable-pitch nil :font "EB Garamond")
   (set-fontset-font t 'han "Noto Sans CJK SC")
   (set-fontset-font t 'han "Noto Sans CJK TC" nil 'append))
 
@@ -31,13 +31,14 @@
   (menu-bar-mode -1)
   (toggle-scroll-bar -1)
   (tool-bar-mode -1)
-  (load-theme 'modus-vivendi t)
   (my/fontconfig))
 
 (let ((hook (if (daemonp)
 		'server-after-make-frame-hook
 	      'after-init-hook)))
   (add-hook hook #'my/ui-init))
+
+(load-theme 'modus-vivendi t)
   
 ;; --- From doom emacs' source code:
 ;; These two functions don't exist in terminal Emacs, but some Emacs packages
@@ -97,23 +98,24 @@
 (add-to-list 'TeX-view-program-list
 	     '("my-pdf-viewer"
 	       ("zathura-float %o"
-		(mode-io-correlate
-		 " --synctex-forward %n:0:\"%(project-dir)tex/main.tex\" -x \"emacsclient +%{line} %{input}\""))
+		;; (mode-io-correlate
+		 ;; " --synctex-forward %n:0:\"%(project-dir)tex/main.tex\" -x \"emacsclient +%{line} %{input}\""))
+		(mode-io-correlate " --synctex-forward %n:0:\"%b\" -x \"emacsclient +%{line} %{input}\""))
 	       "zathura-float"))
 	     
 (add-to-list 'TeX-view-program-selection '(output-pdf "my-pdf-viewer"))
 
-(eval-after-load "tex"
-  '(progn
-     (make-local-variable (defvar project-dir nil))
-     (add-to-list 'TeX-expand-list
-		  '("%(project-dir)" (lambda nil project-dir)))
-     (add-to-list 'TeX-command-list
-		  '("make"
-		    "make -C %(project-dir)"
-		    TeX-run-shell nil
-		    (latex-mode doctex-mode)
-		    :help "Build project via `make'"))))
+;; (eval-after-load "tex"
+;;   '(progn
+;;      (make-local-variable (defvar project-dir nil))
+;;      (add-to-list 'TeX-expand-list
+;; 		  '("%(project-dir)" (lambda nil project-dir)))
+;;      (add-to-list 'TeX-command-list
+;; 		  '("make"
+;; 		    "make -C %(project-dir)"
+;; 		    TeX-run-shell nil
+;; 		    (latex-mode doctex-mode)
+;; 		    :help "Build project via `make'"))))
 ;;      (add-to-list 'TeX-command-list
 ;; 		  '("latex-build-project"
 ;; 		    "%`%l%(mode)%' %(output-dir) %(project-dir)tex/main.tex"
@@ -121,35 +123,136 @@
 ;; 		    (latex-mode doctex-mode)
 ;; 		    :help "Build LaTeX project"))))
 
-(defun my/LaTeX-setup ()
+(defun my/latex-setup ()
   "My configuration to LaTeX-mode"
-  (setq project-dir (file-truename (locate-dominating-file (buffer-file-name) "Makefile")))
   (setq TeX-command-extra-options "--synctex=1")
   
   ;; Modes
+  (make-local-variable 'input-method-activate-hook)
+  (add-hook 'input-method-activate-hook 'my/latex-cache-im nil t)
+  (add-hook 'input-method-deactivate-hook 'my/latex-cache-im-deactivated nil t)
+  (add-hook 'post-command-hook 'my/latex-im-autoswitch nil t)
   (TeX-fold-mode t)
   (TeX-source-correlate-mode t)
   (display-line-numbers-mode t)
   (delete '("--" . 8211) tex--prettify-symbols-alist)
   (prettify-symbols-mode t)
-  (flymake-mode t)
- '(TeX-fold-buffer t)
-  (if project-dir
-      (progn
-	(setq TeX-output-dir (concat project-dir "build"))
-	(setq TeX-master (concat project-dir "tex/main.tex"))
-	;; (setq TeX-command-default "latex-build-project")
-	)))
+  (jinx-mode -1)
+  ;; (flymake-mode t)
+  ;; (TeX-fold-buffer t)
+  ;; (if (locate-dominating-file (buffer-file-name) "Makefile")
+  ;;     (progn
+  ;; 	(setq project-dir (file-truename (locate-dominating-file (buffer-file-name) "Makefile")))
+  ;; 	(setq TeX-output-dir (concat project-dir "build"))
+  ;; 	(setq TeX-master (concat project-dir "tex/main.tex"))
+  ;; 	(setq TeX-command-extra-options "-shell-escape")
+  ;; 	;; (setq TeX-command-default "latex-build-project")
+  ;; 	))
+  )
 
-(add-hook 'LaTeX-mode-hook 'my/LaTeX-setup)
+(add-hook 'LaTeX-mode-hook 'my/latex-setup)
 (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
 
-(setq TeX-electric-math '("\\(" . "\\)"))
+;; (setq TeX-electric-math '("\\(" . "\\)"))
 (setq TeX-source-correlate-start-server t)
 (setq auto-mode-alist (cons '("\\.tex$" . latex-mode) auto-mode-alist))
 (setq prettify-symbols-unprettify-at-point t)
 (setq TeX-parse-self t)
 (setq japanese-TeX-error-messages nil)
+
+(use-package cdlatex
+  :ensure t
+  :hook (LaTeX-mode . turn-on-cdlatex)
+  :bind (:map cdlatex-mode-map
+	      ("<tab>" . cdlatex-tab)
+	      ("C-<tab>" . my/cdlatex-tab-backwards)))
+
+(defun my/cdlatex-tab-backwards ()
+  "`cdlatex-tab', but for backward movement"
+  (interactive)
+  (catch 'stop
+    (while (re-search-backward "[ )}\n]\\|\\]" (point-min) t)
+      (backward-char 1)
+      (cond
+       ((= (following-char) ?\ )
+        ;; stop at first space or b-o-l
+        (if (not (bolp)) (forward-char 1)) (throw 'stop t))
+       ((= (following-char) ?\n)
+        ;; stop at line end, but not after \\
+        (if (and (bolp) (not (eobp)))
+            (throw 'stop t)
+          (if (equal "\\\\" (buffer-substring-no-properties
+                             (- (point) 2) (point)))
+              (forward-char 1)
+            (throw 'stop t))))
+       (t
+        ;; Stop before )}] if preceding-char is any parenthesis
+        (if (or (= (char-syntax (preceding-char)) ?\()
+                (= (char-syntax (preceding-char)) ?\))
+                (= (preceding-char) ?-))
+            (throw 'stop t)
+          (forward-char 1)
+          (if (looking-at "[^_^({\\[]")
+              ;; stop after closing bracket, unless ^_[{( follow
+              (throw 'stop t))))))))
+
+(setq cdlatex-command-alist
+      '(
+	("pd"		"Insert a partial derivative frac"
+	 "\\frac{\\partial ?}{\\partial }" cdlatex-position-cursor nil nil t)
+	("dd"		"Insert a full derivative frac"
+	 "\\frac{\\mathrm{d}?}{\\mathrm{d}}" cdlatex-position-cursor nil nil t)
+	("equ*"		"Insert an EQUATION* environment template"
+	 "" cdlatex-environment ("equation*") t nil)
+	("ss*"		"Insert a \\subsection*{} statement"
+	 "\\subsection*{?}" cdlatex-position-cursor nil t nil)
+	("sss*"		"Insert a \\subsubsection*{} statement"
+	 "\\subsubsection*{?}" cdlatex-position-cursor nil t nil)
+	("answ"		"Insert my standard answer statement"
+	 "\\noindent\\textbf{Ответ:} ?" cdlatex-position-cursor nil t nil)
+	("seq"	"Insert a system of linear equations"
+	 "\\left\\{ 
+\\begin{array}{l@{\\quad}l}
+? & \\\\
+ & 
+\\end{array}\\right." cdlatex-position-cursor nil nil t)
+	("prodl" "Insert \\prod\\limits_{}^{}" "\\prod\\limits_{?}^{}" cdlatex-position-cursor nil nil t)))
+
+(setq cdlatex-math-symbol-alist
+      '(
+	( ?\[ ("\\Leftarrow"      "\\Longleftarrow"	"\\hookleftarrow"))
+	( ?\] ("\\Rightarrow"     "\\Longrightarrow"	"\\hookrightarrow"))))
+
+(defvar-local my/latex-current-text-im nil
+  "Last im used in nonmath-mode in a LaTeX buffer")
+
+(defvar-local my/latex-current-math-im nil
+  "Last im used in math-mode in a LaTeX buffer")
+
+(defun my/latex-cache-im ()
+  "Set (whether the point is in math mode) variables `my/latex-current-math-im'
+  or `my/latex-current-text-im' as freshly switched im"
+  (when (eq major-mode 'latex-mode)
+      (if (texmathp)
+	  (setq my/latex-current-math-im current-input-method)
+	(setq my/latex-current-text-im current-input-method))))
+
+(defun my/latex-cache-im-deactivated ()
+  "Set (whether the point is in math mode) variables `my/latex-current-math-im'
+  or `my/latex-current-text-im' as nil"
+  (when (eq major-mode 'latex-mode)
+    (if (texmathp)
+	  (setq my/latex-current-math-im nil)
+	(setq my/latex-current-text-im nil))))
+
+(defun my/latex-im-autoswitch ()
+  "Switch input method automatically based on whether is the point in math mode."
+  (when (eq major-mode 'latex-mode)
+    (if (texmathp)
+	(unless (string= current-input-method my/latex-current-math-im)
+	  (activate-input-method my/latex-current-math-im))
+      (unless (string= current-input-method my/latex-current-text-im)
+	(activate-input-method my/latex-current-text-im)))))
 
 (use-package yasnippet
   :config
@@ -213,6 +316,7 @@
 (use-package julia-repl)
 
 (add-hook 'prog-mode-hook 'display-line-numbers-mode)
+(add-hook 'org-mode-hook 'display-line-numbers-mode)
 (global-hl-line-mode t)
 
 (use-package rainbow-delimiters
@@ -221,6 +325,8 @@
 (global-set-key (kbd "C-+") 'text-scale-increase)
 (global-set-key (kbd "C--") 'text-scale-decrease)
 (global-set-key (kbd "H-p") '(message "pivo"))
+(keymap-global-unset "C-z" t)
+(keymap-global-unset "M-z" t)
 
 (use-package eglot)
 
@@ -257,10 +363,8 @@
   :bind (("M-$" . jinx-correct)
          ("C-M-$" . jinx-languages)))
 
-(add-to-list 'auto-mode-alist
-	     '("\\.txt\\'" . (lambda ()
-			       (jinx-mode)
-			       (message "OK"))))
+(add-to-list 'auto-mode-alist '("\\.txt$'" . text-mode))
+(add-hook 'text-mode-hook 'jinx-mode)
 
 ;; Org -----------------------------------------------------------------------------
 (setq org-agenda-files '("~/notes"))
@@ -411,13 +515,68 @@
 
 (use-package nix-mode)
 
+;; (defun my/tmp-frame-mode ()
+;;   "read the code"
+;;   (interactive)
+
+;;   (setq-local mode-line-format nil)
+;;   (local-set-key (kbd "C-x C-s")
+;; 		 (lambda ()
+;; 		   (interactive)
+;; 		   (save-buffer)
+;; 		   (kill-buffer))))
+
+;; (add-to-list 'auto-mode-alist '("popupemacs.\\$" . my/tmp-frame-mode))
+
+(use-package elfeed)
+(setq elfeed-feeds
+      '(("https://karthinks.com/index.xml" blog emacs)
+	("https://blogs.ams.org/mathgradblog/feed/" math)))
+;; (use-package elfeed-tube)
+
+;; (use-package aas
+;;   :config
+;;   (aas-set-snippets 'text-mode
+;; 		    "\\int" "∫"
+;; 		    "\\wedge" "∧"
+;; 		    "\\tp" "⊗"
+;; 		    ";a" "α"
+;; 		    ";b" "β"
+;; 		    ";g" "γ"
+;; 		    ";d" "δ"
+;; 		    ";e" "ε"
+;; 		    ";z" "ζ"
+;; 		    ";th" "θ"
+;; 		    ";l" "λ"
+;; 		    ";m" "μ"
+;; 		    ";n" "ν"
+;; 		    ";x" "ξ"
+;; 		    ";p" "π"
+;; 		    ";r" "ρ"
+;; 		    ";s" "σ"
+;; 		    ";ta" "τ"
+;; 		    ";y" "υ"
+;; 		    ";f" "φ"
+;; 		    ";h" "χ"
+;; 		    ";q" "ψ"
+;; 		    ";o" "ω"
+;; 		    "^0" "⁰"
+;; 		    "^1" "¹"
+;; 		    "^2" "²"
+;; 		    "^a" "ᵃ"
+;; 		    "^b" "ᵇ"
+;; 		    "_a" "ₐ"))
+
+;; (add-hook 'text-mode-hook 'ass-activate-for-major-mode)
+;; (add-hook 'text-mode-hook (lambda () (setq-local require-final-newline nil)))
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
-   '(rust-mode gnu-elpa-keyring-update slime magit auctex use-package))
+   '(cdlatex rust-mode gnu-elpa-keyring-update slime magit auctex use-package))
  '(send-mail-function 'sendmail-send-it))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -429,3 +588,5 @@
 (put 'upcase-region 'disabled nil)
 (put 'LaTeX-narrow-to-environment 'disabled nil)
 (put 'TeX-narrow-to-group 'disabled nil)
+(put 'erase-buffer 'disabled nil)
+(put 'downcase-region 'disabled nil)
