@@ -1,5 +1,0 @@
-# -*- mode: snippet -*-
-# name: bold-math
-# key: `b
-# --
-\boldsymbol{$1} $0

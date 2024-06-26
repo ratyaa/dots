@@ -1,6 +1,7 @@
 #! /usr/bin/env sh
 
 export $(envsubst < ${HOME}/.env)
+# export NOTMUCH_CONFIG="${HOME}/.config/notmuchrc"
 
 [[ -f "${HOME}/.bashrc" ]] && source ~/.bashrc
 

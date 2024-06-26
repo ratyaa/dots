@@ -8,6 +8,9 @@ wm=""
 IFS=':'
 
 report=="${1#?}"
+BG=""
+FG=""
+UL=""
 
 set -- ${report}
 while [ $# -gt 0 ] ; do
@@ -20,13 +23,13 @@ while [ $# -gt 0 ] ; do
 		    # monitor
 		    FG=$COLOR_MONITOR_FG
 		    BG=$COLOR_MONITOR_BG
-		    on_focused_monitor=
+		    on_focused_monitor=""
 		    ;;
 		M*)
 		    # focused monitor
 		    FG=$COLOR_FOCUSED_MONITOR_FG
 		    BG=$COLOR_FOCUSED_MONITOR_BG
-		    on_focused_monitor=1
+		    on_focused_monitor="yes"
 		    ;;
 	    esac
 	    [ $num_mon -lt 2 ] && shift && continue
@@ -41,7 +44,7 @@ while [ $# -gt 0 ] ; do
 		    UL=$BG
 		    ;;
 		F*)
-		    if [ "$on_focused_monitor" ] ; then
+		    if [ -n "${on_focused_monitor}" ] ; then
 			# focused free desktop
 			FG=$COLOR_FOCUSED_FREE_FG
 			BG=$COLOR_FOCUSED_FREE_BG
@@ -50,7 +53,7 @@ while [ $# -gt 0 ] ; do
 			# active free desktop
 			FG=$COLOR_FREE_FG
 			BG=$COLOR_FREE_BG
-			UL=$COLOR_FOCUSED_FREE_BG
+			UL=$COLOR_FREE_BG
 		    fi
 		    ;;
 		o*)
@@ -60,15 +63,17 @@ while [ $# -gt 0 ] ; do
 		    UL=$BG
 		    ;;
 		O*)
-		    if [ "$on_focused_monitor" ] ; then
+		    if [ -n "${on_focused_monitor}" ] ; then
 			# focused occupied desktop
 			FG=$COLOR_FOCUSED_OCCUPIED_FG
 			BG=$COLOR_FOCUSED_OCCUPIED_BG
 			UL=$BG
 		    else
 			# active occupied desktop
-			FG=$COLOR_OCCUPIED_FG
-			BG=$COLOR_OCCUPIED_BG
+			FG=$COLOR_FOCUSED_OCCUPIED_FG
+			BG=$COLOR_FOCUSED_OCCUPIED_BG
+			# FG=$COLOR_OCCUPIED_FG
+			# BG=$COLOR_OCCUPIED_BG
 			UL=$COLOR_FOCUSED_OCCUPIED_BG
 		    fi
 		    ;;
@@ -79,7 +84,7 @@ while [ $# -gt 0 ] ; do
 		    UL=$BG
 		    ;;
 		U*)
-		    if [ "$on_focused_monitor" ] ; then
+		    if [ -n "${on_focused_monitor}" ] ; then
 			# focused urgent desktop
 			FG=$COLOR_FOCUSED_URGENT_FG
 			BG=$COLOR_FOCUSED_URGENT_BG
@@ -92,11 +97,13 @@ while [ $# -gt 0 ] ; do
 		    fi
 		    ;;
 	    esac
+	    # wm="${wm}%{F${FG}}%{B${BG}}%{U${UL}}%{+u}%{A:bspc desktop -f ${name}:} ${name} %{A}%{B-}%{F-}%{-u}"
 	    wm="${wm}%{F${FG}}%{B${BG}}%{U${UL}}%{+u}%{A:bspc desktop -f ${name}:} ${name} %{A}%{B-}%{F-}%{-u}"
 	    ;;
 	[LTG]*)
 	    # layout, state and flags
-	    wm="${wm}%{F$COLOR_STATE_FG}%{B$COLOR_STATE_BG} ${name} %{B-}%{F-}"
+	    # wm="${wm}%{F$COLOR_STATE_FG}%{B$COLOR_STATE_BG} ${name} %{B-}%{F-}"
+	    wm="${wm}"
 	    ;;
     esac
     shift

@@ -1,5 +1,0 @@
-# -*- mode: snippet -*-
-# name: tabref
-# key: tabref
-# --
-\textbf{таб. \ref{tab:$0}}

@@ -1,0 +1,1226 @@
+#+PROPERTY: header-args :tangle "init.el" :mkdirp yes :noweb yes
+#+STARTUP: overview
+
+* Bootstrapping
+
+#+begin_src elisp :tangle no
+  (require 'org)
+  (find-file (concat user-emacs-directory "init.org"))
+  (org-babel-tangle)
+  (load-file (concat user-emacs-directory "init.el"))
+  (native-compile (concat user-emacs-directory "init.el"))
+#+end_src
+
+* Early init
+
+#+name: early-init
+#+begin_src elisp :tangle "early-init.el"
+  ;;; -*- lexical-binding: t -*-
+  (setq gc-cons-threshold most-positive-fixnum)
+  (setq load-prefer-newer noninteractive)
+
+  (defvar current-init-timestamp before-init-time)
+
+  (push '(tool-bar-lines . 0) default-frame-alist)
+  (push '(menu-bar-lines . 0) default-frame-alist)
+  (push '(vertical-scroll-bars . nil) default-frame-alist)
+  (push '(left-fringe . 12) default-frame-alist)
+  (push '(right-fringe . 12) default-frame-alist)
+  ;; (push '(internal-border-width . 15) default-frame-alist)
+  ;; (push '(alpha-background . 80) default-frame-alist)
+
+  (setq inhibit-startup-screen t)
+  (setq initial-buffer-choice nil)
+  (setq initial-major-mode 'fundamental-mode)
+
+  (use-package use-package)
+  (setq use-package-always-ensure t)
+  (setq use-package-always-defer t)
+
+  (setq user-emacs-directory (file-name-directory (file-truename load-file-name)))
+  (setq custom-file (concat user-emacs-directory "custom.el"))
+
+  (defun my/reset-after-init ()
+    "Reset parameters used in early-init for faster startup to
+    something reasonable."
+    (setq gc-cons-threshold (* 16 1024 1024)))
+
+  (add-hook 'after-init-hook #'my/reset-after-init)
+
+  (declare-function my/config-emacs-faces nil)
+  (add-to-list 'load-path (concat user-emacs-directory "lib"))
+  (load-library "personal-lib")
+  (my/config-emacs-faces)
+#+end_src
+
+* Personal functions
+
+#+begin_src elisp :tangle "lib/personal-lib.el"
+   ;;; -*- lexical-binding: t -*-
+  (defun emacs-report-init-timestamp (mesg)
+       (let* ((time (current-time))
+	      (str (format "%f seconds"
+			  (float-time (time-subtract time
+						     current-init-timestamp)))))
+	 (setq current-init-timestamp time)
+	 (message "%s" (concat str " " mesg))))
+
+  (defun my/try-xdg-open (filename)
+    "Try to open file with xdg-open and return current buffer,
+    otherwise apply `find-file-noselect'."
+    (if (not (member (file-name-extension filename) my/xdg-open-extensions))
+	(find-file-noselect filename)
+      (browse-url-xdg-open (expand-file-name filename))
+      t))
+
+  (defun my/find-file-noselect-try-xdg (filename &optional wildcards)
+    "If FILENAME is a directory, apply `find-file-noselect', otherwise
+    expand wildcards and recursively apply `my/try-xdg-open'."
+    (setq filename
+	  (abbreviate-file-name
+	   (expand-file-name filename)))
+    (if (file-directory-p filename)
+	(find-file-noselect filename)
+      (if (and wildcards
+	       find-file-wildcards
+	       (not (file-name-quoted-p filename))
+	       (string-match "[[*?]" filename))
+	  (let ((files (condition-case nil
+			   (file-expand-wildcards filename t)
+			 (error (list filename))))
+		(find-file-wildcards nil))
+	    (if (null files)
+		(my/try-xdg-open filename)
+	      (mapcar #'my/try-xdg-open files)))
+	(my/try-xdg-open filename))))
+
+  (defun my/find-file-try-xdg (filename &optional wildcards)
+    "The same as `find-file', except than if found FILENAMEs have an
+    extension that is a member of `my/xdg-open-extensions' list, open
+    them via xdg-open."
+    (interactive
+     (find-file-read-args "Find file: "
+			  (confirm-nonexistent-file-or-buffer)))
+    (let ((value (my/find-file-noselect-try-xdg filename wildcards)))
+      (cond ((eq value t) nil)
+	    ((listp value) (mapcar 'pop-to-buffer-same-window (nreverse (delq t value))))
+	    (t (pop-to-buffer-same-window value)))))
+
+  (defun my/emacs-popup-find-file ()
+    "Call `find-file' in a pop-up minibuffer-only frame."
+    (interactive)
+    (call-process "bspc" nil nil nil "rule" "-a" "Emacs" "rectangle=")
+    (call-process "bspc" nil nil nil "rule" "-a" "Emacs" "state=floating")
+    (make-frame
+     '((name . "<file-launcher>")
+       (minibuffer . only)
+       (width . 60)
+       (height . 10)))
+    (call-interactively #'my/find-file-try-xdg)
+    (delete-frame (select-frame-by-name "<file-launcher>"))
+    (call-process "bspc" nil nil nil "rule" "-a" "Emacs" "state=tiled"))
+
+  (defun my/cdlatex-tab-backwards ()
+    "`cdlatex-tab', but for backward movement"
+    (interactive)
+    (catch 'stop
+      (while (re-search-backward "[ )}\n]\\|\\]" (point-min) t)
+	(backward-char 1)
+	(cond
+	 ((= (following-char) ?\ )
+	  ;; stop at first space or b-o-l
+	  (if (not (bolp)) (forward-char 1)) (throw 'stop t))
+	 ((= (following-char) ?\n)
+	  ;; stop at line end, but not after \\
+	  (if (and (bolp) (not (eobp)))
+	      (throw 'stop t)
+	    (if (equal "\\\\" (buffer-substring-no-properties
+			       (- (point) 2) (point)))
+		(forward-char 1)
+	      (throw 'stop t))))
+	 (t
+	  ;; Stop before )}] if preceding-char is any parenthesis
+	  (if (or (= (char-syntax (preceding-char)) ?\()
+		  (= (char-syntax (preceding-char)) ?\))
+		  (= (preceding-char) ?-))
+	      (throw 'stop t)
+	    (forward-char 1)
+	    (if (looking-at "[^_^({\\[]")
+		;; stop after closing bracket, unless ^_[{( follow
+		(throw 'stop t))))))))
+
+  (declare-function yas-expand nil)
+  (defun my/yas-try-expanding-auto-snippets ()
+    (when (and (boundp 'yas-minor-mode) yas-minor-mode)
+      (let ((yas-buffer-local-condition ''(require-snippet-condition . auto)))
+	(yas-expand))))
+
+  (defun my/tangle-config ()
+    "Tangle and compile my config file."
+    (interactive)
+    (when (buffer-file-name)
+      (let ((prog-mode-hook nil)
+	    (orgfile (file-truename (buffer-file-name))))
+	(when (equal orgfile (file-truename (concat user-emacs-directory my/config)))
+	  (let* ((prog-mode-hook nil)
+		 (targets (org-babel-tangle-file orgfile)))
+	    (dolist (target targets)
+	      (byte-compile-file target)
+	      (native-compile target)
+	    targets))))))
+
+  (declare-function cdlatex-number-of-backslashes-is-odd nil)
+  (declare-function cdlatex--texmathp nil)
+  (declare-function cdlatex-ensure-math nil)
+
+  (defun my/sub-superscript (sub-superscript-char)
+    "Insert ^{} or _{} unless the number of backslashes before point is odd.
+    When not in LaTeX math environment, _{} and ^{} will have dollars.
+    When pressed twice, make the sub/superscript roman."
+    (interactive)
+    (if (and cdlatex-make-sub-superscript-roman-if-pressed-twice
+	     (equal this-command last-command))
+	(progn
+	  (insert "\\mathrm{}")
+	  (backward-char 1))
+      (if (cdlatex-number-of-backslashes-is-odd)
+	  ;; Quoted
+	  (insert sub-superscript-char)
+	;; Check if we are in math mode, if not switch to or only add _ or ^
+	(if (not (or (cdlatex--texmathp)
+		     cdlatex-sub-super-scripts-outside-math-mode))
+	    (insert sub-superscript-char)
+	  (cdlatex-ensure-math)
+	  ;; Insert the normal template.
+	  (insert sub-superscript-char)
+	  (insert "{}")
+	  (forward-char -1)))))
+
+  (defun my/latex-insert-alternate (text math)
+    "Eval s-exp dependently on `texmathp' value."
+    (if (texmathp)
+	(eval math t)
+      (eval text t)))
+#+end_src
+
+** Updating faces
+
+#+begin_src elisp :tangle "lib/personal-lib.el"
+  (defun my/config-display-line-numbers-faces ()
+    "My faces configuration for `display-line-numbers-mode' minor mode."
+    (dolist (face my/display-line-numbers-faces)
+	(apply #'set-face-attribute face)))
+
+  (defun my/config-font-lock-faces ()
+    "My faces configuration for `font-lock-mode' minor mode."
+    (dolist (face my/font-lock-faces)
+      (apply #'set-face-attribute face)))
+
+  (defun my/config-org-faces ()
+    "My faces configuration for org-mode."
+    (dolist (face my/org-faces)
+      (apply #'set-face-attribute face)))
+
+  (defun my/config-emacs-faces ()
+    "My configuration for the built-in emacs faces."
+    (dolist (face my/emacs-faces)
+      (apply #'set-face-attribute face)))
+
+  (defun my/update-faces ()
+    "Load personal faces config."
+    (dolist (update-function my/update-feature-face-functions)
+      (when (featurep (car update-function))
+	(funcall (cdr update-function)))))
+
+  (defun my/toggle-themes ()
+    "Call `modus-themes-toggle' and then `my/update-faces'."
+    (interactive)
+    (modus-themes-toggle)
+    (my/update-faces))
+
+  (defconst my/config "init.org"
+    "Name of my emacs literate .org config file.")
+
+  (defvar my/emacs-faces
+    '((default nil
+	       :font "JetBrainsMono Nerd Font Mono"
+	       :height 100)
+      (fixed-pitch nil
+		   :font "JetBrainsMono Nerd Font Mono"
+		   :height 100)
+      (variable-pitch nil
+		      :font "Merriweather"
+		      :height 105
+		      :weight regular
+		      :width ultra-expanded)))
+
+  (defvar my/org-faces
+    '((org-default nil
+		   :inherit 'variable-pitch)
+      (org-block nil
+		 :inherit 'fixed-pitch)
+      (org-block-begin-line nil
+			    :inherit 'font-lock-comment-face)
+      (org-block-end-line nil
+			  :inherit 'org-block-begin-line)))
+
+  (defvar my/display-line-numbers-faces
+    '((line-number nil
+		   :inherit 'line-number
+		   :font "JetBrainsMono Nerd Font Mono"
+		   :height 100)))
+
+  (defvar my/font-lock-faces
+    '((font-lock-comment-face nil
+			      :inherit 'font-lock-comment-face
+			      :font "JetBrainsMono Nerd Font Mono"
+			      :height 100
+			      :slant italic)))
+
+  (defvar my/update-feature-face-functions
+    '((faces . my/config-emacs-faces)
+      (font-core . my/config-font-lock-faces)
+      (display-line-numbers . my/config-display-line-numbers-faces)
+      (org . my/config-org-faces)))
+#+end_src
+
+* Package manager
+
+#+begin_src elisp
+  ;;; -*- lexical-binding: t -*-
+  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+  (add-to-list 'package-archives '("gnu" . "http://elpa.gnu.org/packages/") t)
+#+end_src
+
+* Emacs
+
+#+begin_src elisp
+  (autoload #'server-running-p "server")
+  (unless (server-running-p)
+    (server-start))
+
+  (setq use-dialog-box nil)
+
+
+  (savehist-mode)
+
+  (recentf-mode)
+
+  (global-auto-revert-mode)
+
+  (defvar my/xdg-open-extensions
+    (list "pdf" "mkv")
+    "List of filename extensions which need to be opened via xdg-open.")
+
+  (defconst dotfiles-user-emacs-dir
+    (concat (getenv "HOME") "/.config/dotfiles/.config/emacs/"))
+
+  (defvar personal-keybindings nil)
+#+end_src
+
+** Autosaves & Backups
+
+#+begin_src elisp
+  (setq auto-save-file-name-transforms
+	'(("\\`/[^/]*:\\([^/]*/\\)*\\([^/]*\\)\\'" "/tmp/\\2" t)
+	  (".*" "~/.config/emacs/.autosaves/" sha512)))
+
+  (setq make-backup-files nil)
+#+end_src
+
+** Window management
+
+#+begin_src elisp
+  
+#+end_src
+
+** Keybindings
+
+#+begin_src elisp
+  (keymap-global-set "C-x C-f" #'my/find-file-try-xdg)
+  (keymap-global-set "C-+" #'text-scale-increase)
+  (keymap-global-set "C--" #'text-scale-decrease)
+
+  (keymap-global-unset "C-z" t)
+  (keymap-global-set "M-z" #'zap-to-char)
+  (keymap-global-set "C-c n" #'notmuch)
+  (keymap-global-set "C-h" #'delete-backward-char)
+
+  ;; Org commands
+  (keymap-global-set "C-c o l" #'org-store-link)
+  (keymap-global-set "C-c o a" #'org-agenda)
+  (keymap-global-set "C-c o c" #'org-capture)
+
+  ;; Help
+  (keymap-global-set "C-c h" 'help-command)
+#+end_src
+
+** Hooks
+
+#+begin_src elisp
+  (add-hook 'font-lock-mode-hook #'my/config-font-lock-faces)
+  (add-hook 'display-line-numbers-mode-hook #'my/config-display-line-numbers-faces)
+#+end_src
+
+* Themes & fonts
+
+** my theme
+
+#+begin_src elisp
+  (set-frame-parameter nil 'alpha-background 85)
+  (add-to-list 'default-frame-alist '(alpha-background . 85))
+
+  (use-package emacs
+    :init
+    (setq modus-themes-bold-constructs t
+          modus-themes-italic-constructs t
+          modus-themes-syntax '(alt-syntax)
+          modus-themes-mode-line '(borderless accented)
+          ;; modus-themes-fringes nil
+          modus-themes-hl-line '(accented intense)
+          modus-themes-subtle-line-numbers t
+          modus-themes-paren-match '(bold)
+          modus-themes-region '(accented bg-only))
+
+    (set-fontset-font t 'han "Noto Sans CJK SC")
+    (set-fontset-font t 'han "Noto Sans CJK TC" nil 'append)
+    (set-fontset-font t 'symbol (font-spec :family "Noto Color Emoji") nil 'prepend) 
+    :config
+    (load-theme 'modus-vivendi)
+    (my/update-faces))
+#+end_src
+
+** Text positioning
+
+#+begin_src elisp
+  ;; (use-package olivetti
+  ;;   :defer t
+  ;;   :functions elfeed-show-refresh
+  ;;   :after elfeed
+  ;;   :config
+  ;;   (defun my/elfeed-show (buffer)
+  ;;     (switch-to-buffer buffer)
+  ;;     (olivetti-mode)
+  ;;     (elfeed-show-refresh)))
+#+end_src
+
+* Snippets
+
+#+begin_src elisp
+  (use-package yasnippet
+    :defer t
+    :commands yas-minor-mode
+    :config
+    (setq yas-snippet-dirs '("~/.snippets"))
+    (setq yas-triggers-in-field t)
+
+    (declare-function yas-reload-all nil)
+    (yas-reload-all)
+    (add-hook 'LaTeX-mode-hook 'yas-minor-mode))
+#+end_src
+
+* LaTeX
+
+#+begin_src elisp
+  (use-package tex
+    :defer t
+    :ensure auctex
+    ;; :defines tex--prettify-symbols-alist
+    :config
+    (require 'org)
+    (declare-function TeX-revert-document-buffer nil)
+    (declare-function TeX-source-correlate-mode nil)
+
+    (defun my/latex-setup ()
+      "My configuration to LaTeX-mode"
+      (setq TeX-command-extra-options "--synctex=1")
+
+      ;; Modes
+      (make-local-variable 'input-method-activate-hook)
+      (add-hook 'input-method-activate-hook 'my/latex-cache-im nil t)
+      (add-hook 'input-method-deactivate-hook 'my/latex-cache-im-deactivated nil t)
+      (add-hook 'post-command-hook 'my/latex-im-autoswitch nil t)
+      (add-hook 'post-self-insert-hook 'my/yas-try-expanding-auto-snippets nil t)
+
+      (TeX-fold-mode t)
+      (TeX-source-correlate-mode t)
+      (display-line-numbers-mode t)
+
+      (let ((my/tex-prettify-symbols-alist
+	     '(( "\\left( " . ?\( )
+	       ( " \\right)" . ?\) )
+	       ( "\\left[ " . ?\[ )
+	       ( " \\right]" . ?\] )
+	       ( "\\left\\{ " . ?\{ )
+	       ( " \\right\\}" . ?\} )
+	       ( "\\left| " . ?\| )
+	       ( " \\right|" . ?\| )
+	       ( "\\left< " . ?\< )
+	       ( " \\right>" . ?\> )
+	       ( "\\mathrm{d}" . ?ꟈ)
+	       ( "\\frac" . ?÷)
+	       ( "\\limits" . ?|)
+	       ( "\\left." . ?< )
+	       ( "\\iint" . ?∬ )
+	       ( "\\iiint" . ?∭ ))))
+	(dolist (my/pretty my/tex-prettify-symbols-alist)
+	  (add-to-list 'prettify-symbols-alist my/pretty)))
+      (delete '("--" . 8211) prettify-symbols-alist)
+      (prettify-symbols-mode t))
+    (add-hook 'LaTeX-mode-hook 'my/latex-setup)
+    (add-to-list 'TeX-view-program-list
+		 '("my-pdf-viewer"
+		   ("zathura-float %o"
+		    ;; (mode-io-correlate
+		    ;; " --synctex-forward %n:0:\"%(project-dir)tex/main.tex\" -x \"emacsclient +%{line} %{input}\""))
+		    (mode-io-correlate " --synctex-forward %n:0:\"%b\" -x \"emacsclient +%{line} %{input}\""))
+		   "zathura-float"))
+
+    (add-to-list 'TeX-view-program-selection '(output-pdf "my-pdf-viewer"))
+
+    (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
+
+    ;; (setq TeX-electric-math '("\\(" . "\\)"))
+    (setq TeX-source-correlate-start-server t)
+    (setq auto-mode-alist (cons '("\\.tex$" . latex-mode) auto-mode-alist))
+    (setq TeX-parse-self t)
+    (setq japanese-TeX-error-messages nil)
+
+
+
+    (use-package cdlatex
+      :ensure t
+      :hook (LaTeX-mode . turn-on-cdlatex)
+      ;; :config
+      ;; (setopt cdlatex-math-modify-prefix "C-S-z")
+      ;; (setopt cdlatex-math-symbol-prefix "C-z")
+      :bind (:map
+	     cdlatex-mode-map
+	     ("<tab>" . cdlatex-tab)
+	     ("<backtab>" . my/cdlatex-tab-backwards)
+	     ("C-z" . cdlatex-math-symbol)
+	     ("C-S-z" . cdlatex-math-modify)
+	     :map orgtbl-mode-map
+	     ("<tab>" . lazytab-org-table-next-field-maybe))
+      :config
+      (load-file (concat user-emacs-directory "lazytab.el"))
+      (require 'lazytab)
+      (lazytab-mode t)
+
+      (setq cdlatex-command-alist
+	    '(
+	      ("pd"		"Insert a partial derivative frac"
+	       "\\frac{\\partial ?}{\\partial }" cdlatex-position-cursor nil nil t)
+	      ("ppd"		"Insert a second order partial derivative frac (one var)"
+	       "\\frac{\\partial^2 ?}{\\partial ^2}" cdlatex-position-cursor nil nil t)
+	      ("ddd"		"Insert a second order full derivative frac (one var)"
+	       "\\frac{\\mathrm{d}^2 ?}{\\mathrm{d} ^2}" cdlatex-position-cursor nil nil t)
+	      ("pdpd"		"Insert a second order partial derivative frac (two vars)"
+	       "\\frac{\\partial^2 ?}{\\partial \\partial }" cdlatex-position-cursor nil nil t)
+	      ("dd"		"Insert a full derivative frac"
+	       "\\frac{\\mathrm{d}?}{\\mathrm{d} }" cdlatex-position-cursor nil nil t)
+	      ("fr"		"Insert \\frac{}{}"
+	       "\\frac{ ? }{ }" cdlatex-position-cursor nil nil t)
+	      ("equ*"		"Insert an EQUATION* environment template"
+	       "" cdlatex-environment ("equation*") t nil)
+	      ("ss*"		"Insert a \\subsection*{} statement"
+	       "\\subsection*{?}" cdlatex-position-cursor nil t nil)
+	      ("sss*"		"Insert a \\subsubsection*{} statement"
+	       "\\subsubsection*{?}" cdlatex-position-cursor nil t nil)
+	      ("отв"		"Insert my standard answer statement"
+	       "\\paragraph{\\textbf{Ответ:}} $\\displaystyle ?$." cdlatex-position-cursor nil t nil)
+	      ("seq"	"Insert a system of linear equations"
+	       "\\begin{dcases}
+	?
+	\\end{dcases}" cdlatex-position-cursor nil nil t)
+	      ("ceq"		"Insert a collection of linear equations"
+	       "\\begin{sqdcases}
+	?
+	\\end{sqdcases}" cdlatex-position-cursor nil nil t)
+	      ("prodl"		"Insert \\prod\\limits_{}^{}"
+	       "\\prod\\limits_{?}^{}" cdlatex-position-cursor nil nil t)
+	      ("iintl"		"Insert \\iint\\limits_{}^{}"
+	       "\\iint\\limits_{?}^{}" cdlatex-position-cursor nil nil t)
+	      ("iiintl"		"Insert \\iiint\\limits_{}^{}"
+	       "\\iiint\\limits_{?}^{}" cdlatex-position-cursor nil nil t)
+	      ("pmx"		"Insert pmatrix env"
+	       "\\begin{pmatrix} ? \\end{pmatrix}" lazytab-position-cursor-and-edit nil nil t)))
+
+      (setq cdlatex-math-symbol-alist
+	    '(
+	      ( ?\[ ("\\Leftarrow"      "\\Longleftarrow"	"\\hookleftarrow"))
+	      ( ?\] ("\\Rightarrow"     "\\Longrightarrow"	"\\hookrightarrow"))))
+
+      (setq cdlatex-math-modify-alist
+	    '(
+	      ( ?\] "\\text{?}" "$?$" nil nil nil)
+	      ( ?l "\\left. ? \\right|" nil nil nil nil)))
+
+      (define-key cdlatex-mode-map "/"
+		  #'(lambda ()
+		      (interactive)
+		      (my/latex-insert-alternate '(insert "/") '(my/sub-superscript "^"))))
+      (define-key cdlatex-mode-map "."
+		  #'(lambda ()
+		      (interactive)
+		      (my/latex-insert-alternate '(insert ".") '(my/sub-superscript "_"))))
+      (define-key cdlatex-mode-map "_"
+		  #'(lambda ()
+		      (interactive)
+		      (my/latex-insert-alternate '(insert "_") '(insert "."))))
+      (define-key cdlatex-mode-map "^"
+		  #'(lambda ()
+		      (interactive)
+		      (my/latex-insert-alternate '(insert "^") '(insert "/"))))
+      (keymap-set cdlatex-mode-map "C-`" #'prettify-symbols-mode))
+
+    (defun my/latex-cache-im ()
+      "Set (whether the point is in math mode) variables `my/latex-current-math-im'
+	  or `my/latex-current-text-im' as freshly switched im"
+      (when (eq major-mode 'latex-mode)
+	(if (texmathp)
+	    (setq my/latex-current-math-im current-input-method)
+	  (setq my/latex-current-text-im current-input-method))))
+
+    (defun my/latex-cache-im-deactivated ()
+      "Set (whether the point is in math mode) variables `my/latex-current-math-im'
+	  or `my/latex-current-text-im' as nil"
+      (when (eq major-mode 'latex-mode)
+	(if (texmathp)
+	    (setq my/latex-current-math-im nil)
+	  (setq my/latex-current-text-im nil))))
+
+    (defun my/latex-im-autoswitch ()
+      "Switch input method automatically based on whether is the point in math mode."
+      (when (eq major-mode 'latex-mode)
+	(if (texmathp)
+	    (unless (string= current-input-method my/latex-current-math-im)
+	      (activate-input-method my/latex-current-math-im))
+	  (unless (string= current-input-method my/latex-current-text-im)
+	    (activate-input-method my/latex-current-text-im))))))
+
+  (defvar-local my/latex-current-text-im nil
+    "Last im used in nonmath-mode in a LaTeX buffer")
+
+  (defvar-local my/latex-current-math-im nil
+    "Last im used in math-mode in a LaTeX buffer")
+#+end_src
+
+* EXPERIMENT
+
+#+begin_src elisp
+  ;; (defvar rattex--active-keymap 'rattex-mode-map)
+
+  ;; (defvar rattex-track-size 10
+  ;;   "Amount of tracked last inserted racks.")
+
+  ;; (defvar rattex-derivative-keymap
+  ;;   (let ((map (make-sparse-keymap)))
+  ;;     (define-key map "M-d" #'rattex-insert-partial-derivative)
+  ;;     map)
+  ;;   "rattex keymap")
+
+  ;; (defun rattex--insert-derivative (d-string)
+  ;;   "Insert derivative with `d' as given string."
+  ;;   (let ((start-point (point))
+  ;; 	(end-point (point))
+  ;; 	(d-length (length d-string)))
+  ;;     (insert "\\frac{}{}")
+  ;;     (backward-char 3)
+  ;;     (insert (concat d-string " "))
+  ;;     (forward-char 2)
+  ;;     (insert (concat d-string " "))
+  ;;     (backward-char (+ 3 d-length))
+  ;;     (list 'start-point start-point
+  ;; 	  'end-point end-point
+  ;; 	  'rattex-rack-type 'rattex--partial)))
+
+  ;; (defvar rattex-mode-map rattex-derivative-keymap
+  ;;   "Keymap for rattex-mode")
+
+  ;; (defun rattex-insert-partial-derivative ()
+  ;;   "Insert a partial derivative."
+  ;;   (interactive)
+  ;;   (rattex--insert-derivative "\\partial"))
+
+  ;; (defvar rattex--snippet-auto-p nil
+  ;;   "Current state of autosnippet functionality.")
+
+  ;; (defun rattex-snippet-toggle-auto ()
+  ;;   "Toggle autosnippet functionality."
+  ;;   (interactive)
+  ;;   (if rattex--snippet-auto-p
+  ;;       (remove-hook 'post-self-insert-hook 'rattex-snippet-try-expand)
+  ;;     (add-hook 'post-self-insert-hook 'rattex-snippet-try-expand)))
+
+  ;; (defvar rattex--snippet-table
+  ;;   (make-hash-table
+  ;;    :test 'equal
+  ;;    :weakness nil
+  ;;    :size 20
+  ;;    :rehash-size 20
+  ;;    :rehash-threshold 0.5))
+
+  ;; (defun rattex-snippet-set-table (snippets-alist)
+  ;;   "Create a snippet table from given list."
+  ;;   (dolist (snippet snippets-alist)
+  ;;     (puthash (car snippet) (cdr snippet) rattex--snippet-table)))
+
+  ;; (defvar my/rattex-snippets
+  ;;   (list
+  ;;    '("pd" . (rattex-insert-partial-derivative . rattex-default-math-condition-p))))
+
+  ;; (defun rattex-default-math-condition-p ()
+  ;;   "Return t if char before the point is alphanumeric"
+  ;;   (let ((inhibit-message t))
+  ;;     (memq (get-char-code-property (char-before) 'general-category)
+  ;; 	  '(Ll Lu Lo Lt Lm Nl Nd No))))
+
+  ;; (defvar rattex-snippet-max-length 4
+  ;;   "Maximum length of snippet key string.")
+
+  ;; (defun rattex--snippet-try-key (key length)
+  ;;   "Try to expand snippet from given key."
+  ;;   (let ((action (gethash key rattex--snippet-table nil)))
+  ;;     (if action
+  ;; 	(progn
+  ;; 	  (backward-char length)
+  ;; 	  (if (funcall (cdr action))
+  ;; 	      (forward-char length)
+  ;; 	    (delete-char length)
+  ;; 	    (funcall (car action))
+  ;; 	    nil))
+  ;;       t)))
+
+  ;; (defun rattex-snippet-try-expand ()
+  ;;   "Try to expand snippet at point"
+  ;;   (interactive)
+  ;;   (let ((move 1)
+  ;; 	(key-end (point)))
+  ;;     (while
+  ;; 	(and
+  ;; 	 (<= move rattex-snippet-max-length)
+  ;; 	 (let* ((key-start (- key-end move))
+  ;; 		(key (buffer-substring-no-properties key-start key-end)))
+  ;; 	   (setq move (1+ move))
+  ;; 	   (if (< key-start 1)
+  ;; 	       nil
+  ;; 	     (rattex--snippet-try-key key (- key-end key-start))))))))
+
+  ;; (define-minor-mode rattex-mode
+  ;;   "ne pridumal"
+  ;;   :lighter "rttx")
+
+  ;; (rattex-snippet-toggle-auto)
+  ;; (rattex-snippet-set-table my/rattex-snippets)
+
+  ;; (defconst rattrap-path (concat user-emacs-directory "pkgs/rattrap/"))
+  ;; (use-package rattrap
+  ;;   :ensure nil
+  ;;   :demand t
+  ;;   :load-path rattrap-path
+  ;;   :config
+  ;;   (defvar my/partiald-rat
+  ;;     (list :action    #'ignore
+  ;; 	  :condition #'rattrap-builtin-cond-alphanum
+  ;; 	  :modifier  ?d
+  ;; 	  :prefixes  '((?s ))))
+  
+  ;;   (defvar my/rattrap-latex-table
+  ;;     (rattrap-make-table
+  ;;      '(("pd" . my/partiald-rat)) )
+#+end_src
+
+* Elisp
+
+#+begin_src elisp
+  (define-key emacs-lisp-mode-map (kbd "M-q") #'lisp-fill-paragraph)
+#+end_src
+
+* Org
+
+#+begin_src elisp
+  (use-package org
+    :defer t
+    :ensure nil
+    :init
+    (add-hook 'org-mode-hook #'my/config-org-faces)
+    :hook
+    (org-mode . display-line-numbers-mode)
+    :config
+    ;; Modules
+    (add-to-list 'org-modules 'org-habit t)
+
+    (setq org-src-window-setup 'current-window)
+    (setq org-startup-indented t)
+
+    ;; Habits
+    (setq org-habit-graph-column 50)
+
+    ;; Todo
+    (setq org-todo-keywords
+          '((sequence "TODO" "DOING" "DONE")))
+
+    ;; Logging
+    (setq org-log-done 'time)
+    (setq org-log-into-drawer t)
+    (setq org-agenda-start-with-log-mode t)
+
+
+    (setq org-agenda-window-setup 'only-window)
+    (setq org-agenda-restore-windows-after-quit t)
+
+    (add-hook 'after-save-hook 'my/tangle-config))
+#+end_src
+
+* News, mail & web
+
+#+begin_src elisp
+  ;; Me!
+  (setq user-full-name "Ratibor Siryi"
+        user-mail-address "siryi.ra@phystech.edu")
+
+  (use-package elfeed
+    :defer t
+    :config
+    (setq elfeed-show-entry-switch 'my/elfeed-show)
+    (setq elfeed-feeds
+          '(("https://karthinks.com/index.xml" blog emacs)
+            ("https://blogs.ams.org/mathgradblog/feed/" math)
+            ("https://rsshub.app/telegram/channel/miptru" tgch mipt))))
+
+  (use-package elpher
+    :defer t)
+
+  (use-package notmuch
+    :defer t
+    :init
+    (setq mail-user-agent 'notmuch-user-agent)
+    :config
+    (setq notmuch-hello-sections
+          '(notmuch-hello-insert-saved-searches
+            notmuch-hello-insert-search
+            notmuch-hello-insert-recent-searches
+            notmuch-hello-insert-alltags)))
+
+  (setq send-mail-function 'sendmail-send-it
+        sendmail-program "msmtp"
+        sendmail-coding-system 'utf-8-unix)
+        ;; smtpmail-smtp-server "smtp.yandex.ru"
+        ;; smtpmail-smtp-service 465
+        ;; smtpmail-stream-type 'ssl
+        ;; message-send-mail-function #'smtpmail-send-it)
+
+  (use-package eww
+    :ensure nil
+    :config
+    (setq browse-url-browser-function #'eww-browse-url))
+#+end_src
+
+* Input methods & typing
+
+** ---
+** Input methods
+
+#+begin_src elisp
+  (use-package rime
+    :defer t)
+
+  (defun input-method-set-default (im)
+    "Set default input method"
+    (interactive "sInput method: ")
+    (let ((custom-input-method-alist '(("ru" . "russian-computer")
+				       ("zh" . "rime"))))
+      (setq default-input-method (cdr (assoc im custom-input-method-alist nil)))
+      (message (cdr (assoc im custom-input-method-alist nil)))))
+
+  (setq default-input-method "russian-computer")
+#+end_src
+
+** Language tools
+
+#+begin_src elisp
+  (use-package jinx
+    :hook (org-mode text-mode LaTeX-mode)
+    :config
+    (setq jinx-languages "en_US ru_RU")
+    (keymap-local-set "M-$" #'jinx-correct))
+#+end_src
+
+** Typing
+
+#+begin_src elisp
+  (use-package speed-type
+    :defer t)
+#+end_src
+
+** ---
+
+* Devtools & language modes
+
+** ---
+
+** Hare
+#+begin_src elisp
+  (use-package hare)
+#+end_src
+** Mathematica
+
+#+begin_src elisp
+  ;; (use-package wolfram-mode
+  ;;   :config
+  ;;   (setq wolfram-path "~/.Mathematica/Applications"
+  ;; 	wolfram-program "wolframscript")
+  ;;   (add-to-list 'auto-mode-alist '("\.wls$" . wolfram-mode)))
+
+  (use-package xah-wolfram-mode
+    :ensure nil
+    :demand t
+    :load-path "pkgs/xah-wolfram-mode/"
+    :config
+    (keymap-set xah-wolfram-mode-map "C-c C-c" #'xah-wolfram-run-script))
+#+end_src
+
+** Collaborative editing
+
+#+begin_src elisp
+  (use-package crdt)
+#+end_src
+
+** builtins
+
+#+begin_src elisp
+  (use-package electric
+    :after prog-mode
+    :hook ((prog-mode . electric-pair-mode)))
+
+  (use-package prog-mode
+    :ensure nil
+    :hook
+    (prog-mode . display-line-numbers-mode))
+#+end_src
+
+** Eglot
+
+#+begin_src elisp
+  (use-package eglot
+    :defer t
+    :ensure nil
+    :hook
+    (c++mode . eglot-ensure)
+    :config
+    (add-to-list 'eglot-server-programs
+		 '((c-mode c++-mode)
+		   . ("clangd"))))  
+#+end_src
+
+** VCS
+
+#+begin_src elisp
+  (use-package magit
+    :defer t)
+#+end_src
+
+** Julia
+
+#+begin_src elisp
+  (use-package julia-mode
+    :defer t)
+
+  (use-package julia-repl
+    :defer t)
+#+end_src
+
+** Yaml
+
+#+begin_src elisp
+  (use-package yaml-mode
+    :defer t)
+#+end_src
+
+** Nix
+
+#+begin_src elisp
+  (use-package nix-mode
+    :defer t)
+#+end_src
+
+** Common Lisp
+
+#+begin_src elisp
+  (use-package slime
+    :defer t
+    :config
+    (setq inferior-lisp-program "sbcl"))
+#+end_src
+
+** Elixir
+#+begin_src elisp
+  (use-package elixir-mode)
+#+end_src
+
+** sxhkd
+
+#+begin_src elisp
+  (use-package sxhkdrc-mode
+    :defer t
+    :hook
+    (sxhkdrc-mode . display-line-numbers-mode)
+    :config
+    (add-to-list 'auto-mode-alist `(,(rx "sxhkdrc" string-end) . sxhkdrc-mode)))
+#+end_src
+
+** C & C++
+
+#+begin_src elisp
+  (use-package clang-format
+    :defer t
+    :config
+    (declare-function my/clang-format-config nil)
+    (defun my/clang-format-config ()
+      "My clang-format config. I have an idea to create alternative
+  package for clang-format, because this one doesn't provide minor
+  mode and doing strange things with `org-babel-tangle'."
+      (keymap-local-set "C-M-\\" #'clang-format-region)
+      (keymap-local-set "C-i" #'clang-format)
+      (add-hook 'before-save-hook #'clang-format-buffer nil t))
+
+    (add-hook 'c-mode-hook #'my/clang-format-config)
+    (add-hook 'c++-mode-hook #'my/clang-format-config))
+
+  (setq c-default-style '((java-mode . "java")
+			  (awk-mode . "awk")
+			  (c-mode . "linux")
+			  (other . "gnu")))
+#+end_src
+
+** Gnuplot
+
+#+begin_src elisp
+  (use-package gnuplot
+    :defer t
+    :config
+    (autoload 'gnuplot-mode "gnuplot" "Gnuplot major mode" t)
+    (autoload 'gnuplot-make-buffer "gnuplot" "open a buffer in gnuplot-mode" t)
+    (setq auto-mode-alist (append '(("\\.gp$" . gnuplot-mode)) auto-mode-alist)))
+#+end_src
+
+** Company
+
+#+begin_src elisp
+  (use-package company
+    :hook prog-mode
+    :config
+    (setq company-idle-delay 0)
+    (setq company-minimum-prefix-length 1))
+#+end_src
+
+** Theming
+
+#+begin_src elisp
+  (use-package rainbow-delimiters
+    :defer t
+    :after prog-mode
+    :hook (prog-mode . rainbow-delimiters-mode))
+#+end_src
+
+** ---
+
+** md
+
+#+begin_src elisp
+  (use-package markdown-mode)
+#+end_src
+
+* unsorted
+
+#+begin_src elisp
+	;; Me
+      (setq-default fill-column 80)
+      (setq frame-resize-pixelwise t)
+      (column-number-mode 1)
+      (global-hl-line-mode t)
+      (add-to-list 'auto-mode-alist '("\\.txt$'" . text-mode))
+      (setenv "GPG_AGENT_INFO" nil)
+      (add-hook 'after-save-hook
+		'executable-make-buffer-file-executable-if-script-p)
+#+end_src
+* Minibuffer (vertico, marginalia)
+
+#+begin_src elisp
+  (use-package vertico
+    :demand t
+    :config
+    (setq vertico-count 20)
+    (vertico-mode))
+
+  (use-package marginalia
+    :demand t
+    :bind
+    (:map minibuffer-local-map
+	  ("M-a" . marginalia-cycle))
+    :init
+    (marginalia-mode))
+#+end_src
+
+* Completion
+
+#+begin_src elisp
+  (use-package orderless
+    :demand t
+    :custom
+    (completion-styles '(orderless basic))
+    (completion-category-overrides '((file (styles basic partial-completion)))))
+#+end_src
+
+'* Navigation (consult)
+
+#+begin_src elisp 
+  (use-package consult
+    :demand t
+    :bind
+    (("C-c k" . consult-kmacro)
+     ;; ("C-c h" . consult-history)
+     ("C-c m" . consult-man)
+     ("C-c i" . consult-info)
+     ("C-x b" . consult-buffer)
+     ;; M-g bindings in `goto-map'
+     ("M-g e" . consult-compile-error)
+     ("M-g m" . consult-mark)
+     ;; M-s bindings in `search-map'
+     ("M-s G" . consult-grep)
+     ("M-s g" . consult-git-grep)
+     ("M-s d" . consult-find)
+     )
+    :init
+    (setq xref-show-xrefs-function #'consult-xref))
+  (message (emacs-init-time))
+#+end_src
+
+* EXWM
+
+#+begin_src elisp
+  ;; (use-package exwm
+  ;;   :init
+  ;;   (require 'exwm-config))
+
+  ;; (defun my/exwm-config ()
+  ;;   "Jo Gay's exwm config"
+  ;;   (setq exwm-workspace-number 1)
+  ;;   (add-hook 'exwm-update-class-hook
+  ;;             (lambda ()
+  ;;               (exwm-workspace-rename-buffer exwm-class-name)
+  ;;               (setq-local mode-line-format nil)))
+
+  ;;   (setq exwm-input-global-keys
+  ;;         `((,(kbd "s-x") . my/exwm-launch-application)
+  ;;           (,(kbd "s-w") . exwm-workspace-switch)
+  ;;           (,(kbd "s-|") . exwm-reset)
+
+  ;;           (,(kbd "<XF86AudioMute>") . my/exwm-mute-volume)
+  ;;           (,(kbd "<XF86AudioRaiseVolume>") . my/exwm-raise-volume)
+  ;;           (,(kbd "<XF86AudioLowerVolume>") . my/exwm-lower-volume)))
+
+  ;;   (setq exwm-input-simulation-keys
+  ;;         `((,(kbd "C-b") . [left])
+  ;;           (,(kbd "C-f") . [right])
+  ;;           (,(kbd "C-p") . [up])
+  ;;           (,(kbd "C-n") . [down])
+  ;;           (,(kbd "C-a") . [home])
+  ;;           (,(kbd "C-e") . [end]))))
+
+  ;; (defun my/exwm-mute-volume ()
+  ;;   "Mute audio"
+  ;;   (interactive)
+  ;;   (start-process-shell-command "mute" nil "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"))
+
+  ;; (defun my/exwm-raise-volume ()
+  ;;   "Raise volume"
+  ;;   (interactive)
+  ;;   (start-process-shell-command "raisev" nil "wpctl set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+"))
+
+  ;; (defun my/exwm-lower-volume ()
+  ;;   "Lower volume"
+  ;;   (interactive)
+  ;;   (start-process-shell-command "lowerv" nil "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"))
+
+  ;; (defun my/exwm-launch-application (command)
+  ;;   (interactive (list (read-shell-command "jo gay: ")))
+  ;;   (start-process-shell-command command nil command))
+
+  ;; (my/exwm-config)
+  ;; (exwm-enable)
+#+end_src
+
+* Dired
+
+#+begin_src elisp
+  (use-package dired
+    :ensure nil
+    :init
+    (defvar my/dired-listing-dispatcher-map
+      (make-sparse-keymap
+       "\
+  [z] -la
+  [h] -l")
+      "Listing options keymap for Dired.")
+
+    (let ((key-switches '(("z" . "-la")
+                          ("h" . "-l"))))
+      (dolist (key-switch key-switches)
+        (let ((key (car key-switch))
+              (switch (cdr key-switch)))
+          (keymap-set my/dired-listing-dispatcher-map
+                      key
+                      (lambda ()
+                        (interactive)
+                        (setq-local dired-listing-switches switch)
+                        (dired-sort-other switch))))))
+    :bind-keymap
+    ("C-c z" . my/dired-listing-dispatcher-map)
+    :config
+    (setq dired-create-destination-dirs 'always)
+    (setq dired-create-destination-dirs-on-trailing-dirsep t))
+
+#+end_src
+
+* Minibuffer-line
+
+#+begin_src elisp
+  ;; (use-package minibuffer-line)
+  ;; (use-package mini-modeline
+  ;;   :config
+
+  ;;   (setq mini-modeline-display-gui-line nil))
+
+  ;; (use-package echo-bar
+  ;;   :config
+  ;;   (require 'battery)
+  ;;   (setq echo-bar-format
+  ;; 	'(:eval (concat
+  ;; 		 (if battery-status-function
+  ;; 		     (concat (battery-format
+  ;; 			      "[%b%p%%%%]"
+  ;; 			      (funcall battery-status-function))
+  ;; 			     " | ")
+  ;; 		   "")
+  ;; 		 (format-time-string "%b %d | %H:%M:%S")))))
+
+  ;; (echo-bar-mode)
+
+#+end_src
+
+* Terminal
+#+begin_src elisp
+  (use-package eat)
+
+  (setq eshell-visual-commands nil)
+
+  (eat-eshell-visual-command-mode)
+  (eat-eshell-mode)
+#+end_src
+
+* Final touches!
+#+begin_src elisp
+  (load custom-file)
+#+end_src

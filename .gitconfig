@@ -1,0 +1,21 @@
+[user]
+	name = Ratibor Siryi
+	email = siryi.ra@phystech.edu\n
+	signingkey = E300651360BECAA1
+[commit]
+	gpgsign = true
+[init]
+	defaultBranch = main
+[color]
+	ui = auto
+[core]
+	editor = emacsclient -c
+
+[alias]
+	sync-init = "!f() { [ ! -d \"./.git\" ] \
+	&& git init -b main \
+	&& git remote add ${1}r ratyaa@${1}:${2}; \
+	}; f"
+
+	sync = git fetch \
+	&& git rebase

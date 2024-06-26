@@ -2,7 +2,6 @@
 
 [ -f $HOME/.xprofile ] && source $HOME/.xprofile
 
-sxhkd &
 xrdb -merge $HOME/.Xresources
 
 xset r rate 300 150
@@ -26,9 +25,6 @@ case $(hostname) in
 	;;
 esac
 
-emacs --daemon &
-
-sxhkd &
 dunst &
 xrdb -merge $HOME/.Xresources
 xset r rate 300 150
@@ -40,6 +36,9 @@ light -S 50
 redshift -P -O 4500
 picom -b
 
-feh --bg-scale $HOME/pics/beauty/0003-mountains.jpg
+feh --bg-fill $HOME/pics/beauty/0008-lakeforest.png 
 
+# sxhkd &
 exec bspwm
+# exec emacs
+# exec i3

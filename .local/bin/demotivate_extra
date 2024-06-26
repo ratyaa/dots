@@ -1,0 +1,56 @@
+#! /usr/bin/env bash
+
+input="${1}"
+output="${2}"
+ss="${3}"
+t="${4}"
+text="${5}"
+watermark_text="ЭЛОЖ РЕАЛЬНО ДУМАЕТ ЧТО ОН ТЕНЗОР АХАХАХА"
+
+size=480
+
+font="/usr/share/fonts/liberation/LiberationSerif-Regular.ttf"
+
+fontsize=36
+black_border=5
+white_border=1
+outer_border=40
+text_border=40
+watermark_fontsize=8
+watermark_border=1
+
+y_offset=$((${outer_border} + ${white_border} + ${black_border}))
+watermark_y_offset=$((${outer_border} - (${watermark_border} + ${watermark_fontsize}) / 2))
+watermark_x_offset=60
+
+out_size=480
+
+ffmpeg -ss ${ss} -t ${t} -i ${input} -filter_complex "[0:v] fps=24,scale=${size}:${size},split [a][b];[a] palettegen [p];[b][p] paletteuse" -y .tmp.gif
+
+
+
+convert -size ${size}x${size} xc:none .tmp.png
+convert .tmp.png \
+	-bordercolor black -border ${black_border} \
+	-bordercolor white -border ${white_border} \
+	\( -background black -fill white -font ${font} -pointsize ${fontsize} \
+	label:"${text}" -trim +repage \
+	-bordercolor black -border ${text_border}\
+	\) -gravity South -append \
+	-bordercolor black -border ${outer_border} \
+	-gravity South -chop 0x${outer_border} \
+	.tmp.png
+
+convert xc:none \
+	\( -background black -fill white -font ${font} -pointsize ${watermark_fontsize} \
+	label:"${watermark_text}" -trim +repage \
+	-bordercolor black -border ${watermark_border}\
+	\) -gravity center +append \
+	.watermark.png
+
+magick .tmp.png \
+       .watermark.png -geometry +${watermark_x_offset}+${watermark_y_offset} -composite \
+       .tmp.png
+
+
+ffmpeg -i .tmp.png -i .tmp.gif -filter_complex "overlay=(W-w)/2:${y_offset},scale=${out_size}:${out_size}" -y ${output}.gif

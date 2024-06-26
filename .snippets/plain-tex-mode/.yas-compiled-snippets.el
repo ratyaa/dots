@@ -5,4 +5,4 @@
 		     '((".d" "\\mathrm{d} " "diff" nil nil nil "/home/ratyaa/.snippets/plain-tex-mode/diff" nil nil)))
 
 
-;;; Do not edit! File generated at Thu Mar 30 18:43:23 2023
+;;; Do not edit! File generated at Sat Sep 23 17:14:44 2023

@@ -1,7 +1,0 @@
-# -*- mode: snippet -*-
-# name: gather
-# key: eg
-# --
-\begin{gather*}
-$0
-\end{gather*}

@@ -16,7 +16,7 @@ bspc config gapless_monocle true
 
 bspc rule -a Emacs state=tiled
 
-bspc rule -a Zathura rectangle=1238x1612+1266+52 # border version
+bspc rule -a Zathura rectangle=1238x1602+1266+62 # border version
 # bspc rule -a Zathura rectangle=1260x1640+1260+40
 bspc rule -a Zathura state=tiled
 # bspc rule -a Nyxt state=pseudo_tiled

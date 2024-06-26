@@ -1,0 +1,55 @@
+* {
+    background-color:		#00000000;
+    text-color:			#00000000;
+}
+
+window {
+    height:			1640;
+    width:			100%;
+    transparency:		"real";
+    /*border:			2px;*/
+    /*border-radius:		10px;*/
+    /*border-color:		#d79921;*/
+    y-offset:			20px;
+}
+
+mainbox {
+    /*background-image:		url("goofyplants-small.png", height);*/
+    expand:			true;
+    spacing:			1em;
+    padding:			500px 800px 500px 800px;
+}
+
+inputbar {
+    children: [ prompt, entry ];
+    background-color:		#00000000;
+}
+
+prompt { enabled: false; }
+
+entry {
+    highlight:			bold;
+    placeholder-color:		#737171;
+    background-color:		#000000;
+    text-color:			#ffffff;
+    padding:			1em 1em 1em 1em;
+    border-radius:		10px;
+}
+
+listview {
+    cycle:			false;
+    background-color:		#000000dd;
+    padding: 			0.5em;
+    border-radius:		10px;
+}
+
+element-text {
+    text-color:			#ffffff;
+    margin:			2px 0.5em 2px 0.5em;
+}
+
+element selected {
+    background-color:		#89b09c88;
+    text-color:			#ffffff;
+    border-radius:		5px;
+}

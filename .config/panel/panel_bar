@@ -56,7 +56,7 @@ while true; do
 		;;
 	esac
 	# Final output
-	echo -e "%{l}${datetime} | ${wm}%{c}%{r}${keys} ${wifi} ${bth} ${vol} ${bl} ${bat}"
+	echo -e "%{l}${datetime} | ${wm}%{c}%{r}${keys} ${wifi} ${bth} ${vol} ${bl} ${bat}  "
 	sleep 0.1
     done
     sleep 0.1

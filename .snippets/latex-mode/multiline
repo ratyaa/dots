@@ -1,7 +1,0 @@
-# -*- mode: snippet -*-
-# name: multiline
-# key: eem
-# --
-\begin{multline*}
-$0
-\end{multline*}

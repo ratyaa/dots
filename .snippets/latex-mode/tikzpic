@@ -1,7 +1,0 @@
-# -*- mode: snippet -*-
-# name: tikzpic
-# key: tz
-# --
-\begin{tikzpicture}
-$0
-\end{tikzpicture}

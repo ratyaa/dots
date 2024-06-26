@@ -1,3 +1,35 @@
+# ------------------ audioplayer --------------------
+super + grave
+    audiostream start
+
+super + shift + grave
+    audiostream quit
+
+super + alt + grave
+    audiostream load
+
+super + XF86AudioMute
+    audiostream playpause
+
+super + XF86AudioLowerVolume
+    audiostream lowervol
+
+super + XF86AudioRaiseVolume
+    audiostream raisevol
+
+# ---------------------------------------------------
+super + g
+    bspc node -s biggest.local
+
+super + c
+    gpick -so --no-newline | xclip -selection clipboard
+
+super + alt + e
+    gen-rofi-placeholder && flyed 1200 800 $(grep -v '^#' ~/.local/share/flyedmodes | dmenu -i -l 50 | cut -d' ' -f1) "edit"
+
+super + e
+    gen-rofi-placeholder && flyed 1200 800 $(grep -v '^#' ~/.local/share/flyedmodes | dmenu -i -l 50 | cut -d' ' -f1) "write"
+
 super + shift + Return
     st
 
@@ -14,7 +46,7 @@ super + {_,alt + }w
     bspc node -{c,k}
 
 super + shift + e
-    emacsclient -c
+    emacsclient -c -a=emacs
 
 super + shift + b
     bspc rule -a Emacs state=floating && bookmarkthis && bspc rule -a Emacs state=tiled
@@ -53,19 +85,19 @@ super + {backslash}
     bspc node @/ -B
     
 XF86MonBrightnessUp
-    light -A 1
+    light -A 1 && [ "${HAS_BACKLIGHT}" = "yes" ] && echo "BLIGHT$(light)" > "$PANEL_FIFO" &
 
 XF86MonBrightnessDown
-    light -U 1
+    light -U 1 && [ "${HAS_BACKLIGHT}" = "yes" ] && echo "BLIGHT$(light)" > "$PANEL_FIFO" &
 	
 XF86AudioRaiseVolume
-    wpctl set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+
+    wpctl set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+ && echo "VOL$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | sed 's/Volume: //g; s/ \[MUTED\]/M/g')" > "$PANEL_FIFO"
 
 XF86AudioLowerVolume
-    wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
+    wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- && echo "VOL$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | sed 's/Volume: //g; s/ \[MUTED\]/M/g')" > "$PANEL_FIFO"
 
 XF86AudioMute
-    wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+    wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle && echo "VOL$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | sed 's/Volume: //g; s/ \[MUTED\]/M/g')" > "$PANEL_FIFO"
 
 XF86WLAN
     bluetoothctl connect 2C:BE:EB:12:FE:4A && nmcli device wifi list --rescan yes

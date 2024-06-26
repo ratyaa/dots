@@ -1,5 +1,0 @@
-# -*- mode: snippet -*-
-# name: left-right-parens
-# key: '()
-# --
-\left($1 \right) $0

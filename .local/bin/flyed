@@ -1,0 +1,179 @@
+#! /usr/bin/env bash
+
+xsize="${1}"
+ysize="${2}"
+mode="${3}"
+action="${4}"
+
+maindir="${HOME}/.local/share/flyed"
+templatedir="${maindir}/templates"
+windowfile="${maindir}/.window"
+
+[ ! -d "${maindir}" ] && mkdir -p "${maindir}"
+[ ! -d "${templatedir}" ] && mkdir -p "${templatedir}"
+
+function texpng_init {
+    texdir="${maindir}/tex"
+    outputdir="${maindir}/build"
+    
+    [ ! -d "${texdir}" ] && mkdir -p "${texdir}"
+    [ ! -d "${outputdir}" ] && mkdir -p "${outputdir}"
+    [ ! -f "${maindir}/Makefile" ] && touch "${maindir}/Makefile"
+
+    [ ! -d "${texdir}/.git" ] && git --git-dir="${texdir}/.git" --work-tree="${texdir}" init
+    [ ! -f "${texdir}/.gitignore" ] && echo -e '**/*~\n**/#*#' > "${texdir}/.gitignore"
+
+    if [ -f "${templatedir}/main.tex" ] &&
+	   [ -f "${templatedir}/main.tex" ]
+    then
+	cp "${templatedir}/main.tex" "${texdir}/main.tex"
+	[ ! "${action}" = "edit" ] && cp "${templatedir}/input.tex" "${texdir}/input.tex"
+    else
+	echo "Template file not found."
+	exit -1
+    fi
+
+    return 0
+}
+
+function texpng_process {
+    texdir="${maindir}/tex"
+    outputdir="${maindir}/tex"
+    inputfile="${texdir}/input.tex"
+    outputfile="${outputdir}/main"
+    mainfile="${texdir}/main"
+    textfile="${texdir}/text.txt"
+    eqfile="${texdir}/eq.tex"
+
+    emacsclient -c -a=emacs "${inputfile}"
+
+    commit_message="$(head -n 1 "${inputfile}" |  sed 's/\(.\{70\}\).*/\1.../')"
+    [ -z "${commit_message}" ] && commit_message='<empty_message>'
+    
+    git --git-dir="${texdir}/.git" --work-tree="${texdir}" add .
+    git --git-dir="${texdir}/.git" --work-tree="${texdir}" commit --no-gpg-sign -m "${commit_message}"
+    
+    sed -e '1,/^\.\.\.tex\.\.\.$/w'" ${textfile}"'
+    /^\.\.\.tex\.\.\.$/,$w'" ${eqfile}" "${inputfile}"
+
+    echo "$(head -n -1 "${textfile}")" > "${textfile}"
+    [ "$(tail -c 1 "${textfile}" | wc -l)" = 1 ] &&
+	echo -n "$(head -c -1 "${textfile}")" > "${textfile}"
+    cat "${textfile}" | xclip -selection clipboard
+    
+    echo -n "$(tail -n +2 "${eqfile}")" > "${eqfile}"
+    sed -i '/^$/d' "${eqfile}"
+            
+    (cd "${texdir}" && latex -no-shell-escape -interaction=nonstopmode -halt-on-error -output-directory "${outputdir}" "${mainfile}.tex")
+    dvisvgm --no-fonts --scale='1' --exact "${outputfile}.dvi" -o "${outputfile}.svg"
+    convert -density 1200 -bordercolor none -border 200 "${outputfile}.svg" "${outputfile}.png"
+    # dvipng -bg '2B5278' -fg 'FFFFFF' -bd 200 -bd '2B5278' "${outputfile}.dvi" -o "${outputfile}.png"
+    if [ "${mode}" = "texpng<pointjak>" ]
+    then
+	leftjak="${maindir}/pics/left_small.png"
+	rightjak="${maindir}/pics/right_small.png"
+	convert "${outputfile}.png" "${rightjak}" -gravity southeast -composite "${leftjak}" -gravity southwest -composite "${outputfile}.png"
+    elif [ "${mode}" = "texpng<smugjak>" ]
+    then
+	smugjak="${maindir}/pics/smugjak_small.png"
+	convert "${outputfile}.png" "${smugjak}" -gravity southwest -composite "${outputfile}.png"
+    elif [ "${mode}" = "texpng<elozh>" ]
+    then
+	elozh="${maindir}/pics/elozh.png"
+	convert "${outputfile}.png" "${elozh}" -set colorspace sRGB -gravity southwest -composite "${outputfile}.png"
+    elif [ "${mode}" = "texpng<elozh512>" ]
+    then
+	elozh="${maindir}/pics/elozh_512.png"
+	convert "${outputfile}.png" "${elozh}" -set colorspace sRGB -gravity southwest -composite "${outputfile}.png"
+    elif [ "${mode}" = "texpng<me>" ]
+    then
+	me="${maindir}/pics/me.png"
+	convert "${outputfile}.png" "${me}" -set colorspace sRGB -gravity southeast -composite "${outputfile}.png"
+    elif [ "${mode}" = "texpng<bois>" ]
+    then
+	leftjak="${maindir}/pics/elozh.png"
+	rightjak="${maindir}/pics/me.png"
+	convert "${outputfile}.png" "${rightjak}" -set colorspace sRGB -gravity southeast -composite "${leftjak}" -gravity southwest -composite "${outputfile}.png"
+    elif [ "${mode}" = "texpng<ershov>" ]
+    then
+	elozh="${maindir}/pics/ershov.png"
+	convert "${outputfile}.png" "${elozh}" -set colorspace sRGB -gravity southwest -composite "${outputfile}.png"
+    elif [ "${mode}" = "texpng<elozh+ershov>" ]
+    then
+	leftjak="${maindir}/pics/elozh.png"
+	rightjak="${maindir}/pics/ershov_right.png"
+	convert "${outputfile}.png" "${rightjak}" -set colorspace sRGB -gravity southeast -composite "${leftjak}" -gravity southwest -composite "${outputfile}.png"
+    fi
+    # convert "${outputfile}.png" -background white -alpha remove -alpha off "${outputfile}.png"
+    # convert "${outputfile}.png" +level-colors white,"#2B5278" "${outputfile}.png"
+    
+    xdotool windowactivate "$(cat "${windowfile}")"
+    xdotool key 'ctrl+v'
+    xclip -selection clipboard -target image/png "${outputfile}.png"
+    xdotool key 'ctrl+v'
+
+    return 0
+}
+
+function default_init {
+    mainfile="${maindir}/main.${mode}"
+    if [ "${action}" = "edit" ]
+    then
+	echo "$(xclip -o)" > "${mainfile}"
+    else
+	if [ -f "${templatedir}/main.${mode}" ]
+	then
+	    cp "${templatedir}/main.${mode}" "${mainfile}"
+	else
+	    echo "Template file not found."
+	    exit -1
+	fi
+	cp "${templatedir}/main.${mode}" "${mainfile}"
+    fi
+
+    [ ! -f "${maindir}/.clang-format" ] &&
+        ln -s "${HOME}/.config/defaults/.clang-format" "${maindir}/.clang-format"
+    return 0
+}
+
+function default_process {
+    mainfile="${maindir}/main.${mode}"
+    keyseq='ctrl+v'
+    
+    emacsclient -c "${mainfile}"
+
+    [ "$(tail -c 1 "${mainfile}" | wc -l)" = 1 ] &&
+	echo -n "$(head -c -1 "${mainfile}")" > "${mainfile}"
+    cat "${mainfile}" | xclip -selection clipboard
+    
+    [ ! -s "${mainfile}" ] && [ "${action}" = "edit" ] &&
+	"empty" && keyseq='BackSpace'
+    xdotool windowactivate "$(cat "${windowfile}")"
+    xdotool key ${keyseq}
+
+    return 0
+}
+
+# -----------------------------------
+padding="100"
+eval "$(xdotool getmouselocation --shell)"
+eval "$(xdpyinfo | grep dimensions | sed 's/[^0-9]*\([0-9]*\)x\([0-9]*\).*/xdim=\1\nydim=\2/g')"
+
+[ "${xdim}" -le "$(echo "${X}+${padding}+${xsize}" | bc)" ] && let "X = X - xsize"
+[ "${ydim}" -le "$(echo "${Y}+${padding}+${ysize}" | bc)" ] && let "Y = Y - ysize"
+
+bspc rule -a Emacs state=floating
+bspc rule -a Emacs rectangle="${xsize}x${ysize}"+"${X}"+"${Y}"
+
+xdotool getactivewindow > "${windowfile}"
+
+if [ ! -z "$(echo "${mode}" | sed -n '/texpng/p')" ]
+then
+    texpng_init
+    texpng_process
+else
+    default_init
+    default_process
+fi
+    
+bspc rule -a Emacs state=tiled

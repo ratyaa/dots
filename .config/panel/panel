@@ -27,14 +27,7 @@ done &
     done
 done &
 
-echo "$(light)" > "$PANEL_FIFO" &
-# while true; do
-#     current_bl=$(light)
-#     [ -n "$(xrandr | grep ' connected' | grep 'HDMI')" ] && echo "BLIGHT$current_bl" > "$PANEL_FIFO"
-#     while [[ $current_bl == $(light) ]]; do
-# 	sleep 0.5
-#     done
-# done &
+[ "${HAS_BACKLIGHT}" = "yes" ] && echo "BLIGHT$(light)" > "$PANEL_FIFO" &
 
 echo "VOL$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | sed 's/Volume: //g; s/ \[MUTED\]/M/g')" > "$PANEL_FIFO" &
 
@@ -77,7 +70,7 @@ bspc subscribe report > "$PANEL_FIFO" &
 
 . panel_colors
 
-panel_bar < "$PANEL_FIFO" | lemonbar -a 32 -u 2 -n "$PANEL_WM_NAME" -g x$PANEL_HEIGHT -f "JetBrainsMono Nerd Font:size=12:style=Medium" -f "Noto Sans CJK SC:size=12:style=Medium" -F "$COLOR_DEFAULT_FG" -B "$COLOR_DEFAULT_BG" | sh &
+panel_bar < "$PANEL_FIFO" | lemonbar -a 32 -u "${PANEL_UNDERLINE_HEIGHT}" -n "$PANEL_WM_NAME" -g x${PANEL_HEIGHT} -f "JetBrainsMono Nerd Font:size=${PANEL_FONT_SIZE}:style=Medium" -f "Noto Sans CJK SC:size=${PANEL_FONT_SIZE}:style=Medium" -F "$COLOR_DEFAULT_FG" -B "$COLOR_DEFAULT_BG" | sh &
 
 # wid=$(xdo id -m -a "$PANEL_WM_NAME")
 # xdo above -t "$(xdo id -N Bspwm -n root | sort | head -n 1)" "$wid"

@@ -1,0 +1,33 @@
+#! /usr/bin/env bash
+
+socket="/tmp/mpvsocket"
+
+function start {
+    gen-rofi-placeholder
+    link="$(grep -v '^#' ~/.local/share/audiostreamlinks | dmenu -i -l 50 | cut -d' ' -f2)"
+    mpv "${link}" --no-video --input-ipc-server="${socket}" &
+}
+
+function load {
+    gen-rofi-placeholder
+    link="$(grep -v '^#' ~/.local/share/audiostreamlinks | dmenu -i -l 50 | cut -d' ' -f2)"
+    echo "loadfile ${link}" | socat - "${socket}"
+}
+
+function quit {
+    echo 'quit' | socat - "${socket}"
+}
+
+function playpause {
+    echo 'cycle pause' | socat - "${socket}"
+}
+
+function lowervol {
+    echo 'add volume -5' | socat - "${socket}"
+}
+
+function raisevol {
+    echo 'add volume 5' | socat - "${socket}"
+}
+
+"$@"

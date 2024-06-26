@@ -1,5 +1,0 @@
-# -*- mode: snippet -*-
-# name: statebar
-# key: '|
-# --
-\left. $0 \right|_{$1}^{$2}
